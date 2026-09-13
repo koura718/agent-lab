@@ -6,21 +6,23 @@
 # Python
 .venv/
 __pycache__/
+*.py[cod]
 .pytest_cache/
 .ruff_cache/
 
 # Node.js
 node_modules/
 
-# Tools
+# Logs
+logs/
+*.log
+
+# AI Tools
 .codex/
 .claude/
 
-# Logs
-*.log
-logs/
-
 # OS / Editor
+Thumbs.db
 .DS_Store
 .vscode/
 .idea/
