@@ -149,13 +149,14 @@ mise current
 # 5. Verify uv through mise
 # -----------------------------------------------------------------------------
 
-if ! mise exec -- command -v uv >/dev/null 2>&1; then
-    log_error "uv could not be resolved through mise."
+if ! mise exec -- uv --version >/dev/null 2>&1; then
+    log_error "uv could not be executed through mise."
+    log_error "Check mise.toml and run: mise install"
     exit 1
 fi
 
-UV_PATH="$(mise exec -- command -v uv)"
-log_info "Using uv: ${UV_PATH}"
+UV_VERSION="$(mise exec -- uv --version)"
+log_info "Using ${UV_VERSION}"
 
 log_info "Python version:"
 mise exec -- uv run python --version
