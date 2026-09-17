@@ -237,7 +237,8 @@ if [[ "${PROJECT_NAME}" == "${TEMPLATE_PROJECT_NAME}" &&
     exit 0
 fi
 
-if [[ "${FORCE}" != true ]]; then
+# Dry-run never modifies files, so a dirty working tree is allowed.
+if [[ "${DRY_RUN}" != true && "${FORCE}" != true ]]; then
     if [[ -n "$(git status --porcelain)" ]]; then
         log_error "Git working tree contains uncommitted changes."
         log_error "Commit or stash the changes before running bootstrap."
@@ -315,6 +316,7 @@ mapfile -t CANDIDATE_FILES < <(
         -not -path "${PROJECT_ROOT}/node_modules/*" \
         -not -path "${PROJECT_ROOT}/.pytest_cache/*" \
         -not -path "${PROJECT_ROOT}/.ruff_cache/*" \
+	-not -path "${PROJECT_ROOT}/scripts/bootstrap.sh" \
         -print
 )
 
@@ -419,6 +421,9 @@ changed_files: list[Path] = []
 
 for path in root.rglob("*"):
     if not path.is_file():
+        continue
+
+    if path == root / "scripts" / "bootstrap.sh":
         continue
 
     if any(part in excluded_dirs for part in path.parts):
