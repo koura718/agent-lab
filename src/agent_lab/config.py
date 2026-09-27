@@ -14,6 +14,7 @@ class ConfigurationError(ValueError):
 
 @dataclass(frozen=True)
 class Settings:
+    tracing_enabled: bool = False
     tool_mode: str = "function"
     model: str | None = None
     max_turns: int = 5
@@ -23,6 +24,8 @@ class Settings:
     log_level: str = "INFO"
 
     def __post_init__(self):
+        if type(self.tracing_enabled) is not bool:
+            raise ConfigurationError("tracing_enabled must be a boolean.")
         if self.tool_mode not in ("function", "mcp"):
             raise ConfigurationError("tool_mode must be function or mcp.")
         if self.model is not None and (
@@ -53,8 +56,10 @@ SECTIONS = {
     "agent": {"tool_mode", "model", "max_turns", "run_timeout_seconds"},
     "mcp": {"connect_timeout_seconds", "call_timeout_seconds"},
     "logging": {"level"},
+    "tracing": {"enabled"},
 }
 ENVIRONMENT = {
+    "tracing_enabled": "AGENT_TRACING_ENABLED",
     "tool_mode": "AGENT_TOOL_MODE",
     "model": "AGENT_MODEL",
     "max_turns": "AGENT_MAX_TURNS",
@@ -68,6 +73,13 @@ ENVIRONMENT = {
 def add_settings_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--config", type=Path, help="Explicit UTF-8 TOML configuration."
+    )
+    parser.add_argument(
+        "--tracing",
+        dest="tracing_enabled",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Opt in to metadata tracing export to OpenAI.",
     )
     parser.add_argument("--tool-mode", choices=["function", "mcp"])
     parser.add_argument("--model")
@@ -96,7 +108,14 @@ def load_settings(args: argparse.Namespace) -> Settings:
                     "Unknown configuration field or invalid section."
                 )
             for key, value in entries.items():
-                values["log_level" if section == "logging" else key] = value
+                field = (
+                    "log_level"
+                    if section == "logging"
+                    else "tracing_enabled"
+                    if section == "tracing"
+                    else key
+                )
+                values[field] = value
         Settings(
             **values
         )  # Reject invalid explicit files even if a later layer overrides.
@@ -105,7 +124,12 @@ def load_settings(args: argparse.Namespace) -> Settings:
         if value is None:
             continue
         try:
-            if key == "max_turns":
+            if key == "tracing_enabled":
+                normalized = value.strip().lower()
+                if normalized not in {"true", "false", "1", "0"}:
+                    raise ValueError("Invalid boolean.")
+                value = normalized in {"true", "1"}
+            elif key == "max_turns":
                 value = int(value)
             elif key.endswith("_seconds"):
                 value = float(value)

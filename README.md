@@ -703,6 +703,14 @@ ANTHROPIC_API_KEY=
 
 ---
 
+## Tracing（Step 8）
+
+既定は無効です。Agent実行時に `--tracing` を指定すると、OpenAIへ
+ID・処理の種類・開始終了時刻・一般化したエラーのみ送信します。
+プロンプト・モデル応答・Tool入出力・例外本文は送信しません。
+ログの `trace_id=trace_<run_id>` で対応付けできます。
+[Tracing運用手順](docs/tracing.md)に設定と確認方法を記載しています。
+
 ## Logging
 
 Agent・Tool・MCPのログ設定を共通化しています。stderrに時刻・レベル・実行ID・イベント・処理時間・エラー分類を出力します。
@@ -884,7 +892,7 @@ Step 3〜6を実装済みです。通常テストはAPI不要、実API検証は�
 | 5 | MCP Client | 実装済み：診断CLI・Agent接続・設定・timeout・終了処理 |
 | 6 | Integration Tests | 実装済み：経路一致・異常系・live明示ゲート・CI区分 |
 | 7 | GitHub Actions | JUnit結果を14日保存・失敗時手順を整備。main保護は別設定 |
-| 8 | Tracing | 後続。通常テストでは無効化する設計 |
+| 8 | Tracing | 実装済み：明示有効化・メタデータのみ送信・run_id連携 |
 | 9 | Application Logging | 実装済み：共通stderrログ・実行ID・処理時間・エラー分類 |
 | 10 | project rename / bootstrap | scripts/bootstrap.shあり。再利用検証は別途 |
 

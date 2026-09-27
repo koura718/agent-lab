@@ -9,3 +9,6 @@ call_timeout_seconds = 10
 
 [logging]
 level = "INFO"
+
+[tracing]
+enabled = false

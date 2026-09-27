@@ -98,6 +98,10 @@ def cli(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         settings = load_settings(args)
+        if settings.tracing_enabled:
+            raise ConfigurationError(
+                "Diagnostic MCP commands do not support tracing; use --no-tracing."
+            )
         arguments = parse_arguments(args.arguments) if args.command == "call" else None
     except ConfigurationError as error:
         logger.error(
