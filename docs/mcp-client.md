@@ -83,14 +83,14 @@ timeoutは有限の正数、最大3600秒。max_turnsは整数1〜100です。
 接続timeoutは起動・初期化、呼出しtimeoutはMCP要求待ち、全体timeoutは実行全体に適用します。
 SDKの要求timeoutは初期化時にも適用されます。終了待ちはtimeout後にも必要なため、
 実際のコマンド終了までには子プロセス回収の時間が加わることがあります。
-ClientのログレベルはServer側のログレベルを変更しません。
+Clientのログレベルは起動するServerにも引き継ぎます。
 
 ## プロセスと終了処理
 
 - `sys.executable -m agent_lab.mcp.server` をshellなしで起動します。
 - 任意の外部コマンド・リモートURL設定は今回の対象外です。
 - cwdは実行時ディレクトリの絶対パスです。インストール済みPython packageを使うため、別ディレクトリからの起動もテストします。
-- 子環境はMCP SDKのOS用allowlistとPYTHONIOENCODINGのみ。親の環境を丸ごと渡さず、APIキーをServerへ転送しません。
+- 子環境はMCP SDKのOS用allowlist、PYTHONIOENCODING、生成した実行IDとログレベルのみ。親の環境を丸ごと渡さず、APIキーをServerへ転送しません。
 - 接続を所有する専用asyncioタスクでSDKの開始・終了を対にします。呼出し元がキャンセルされても、そのタスクで終了処理を行います。
 - compare_listsは読み取り専用で、ファイル操作や外部ネットワーク通信を行いません。
 

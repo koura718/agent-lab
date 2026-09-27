@@ -10,6 +10,7 @@ import anyio
 from mcp import Client, StdioServerParameters
 
 from agent_lab.config import Settings
+from agent_lab.logging_config import current_run_id
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,13 @@ def server_parameters() -> StdioServerParameters:
         command=sys.executable,
         args=["-m", "agent_lab.mcp.server"],
         cwd=Path.cwd().resolve(),
-        env={"PYTHONIOENCODING": "utf-8"},
+        env={
+            "PYTHONIOENCODING": "utf-8",
+            "AGENT_LAB_RUN_ID": current_run_id(),
+            "AGENT_LAB_SERVER_LOG_LEVEL": logging.getLevelName(
+                logging.getLogger("agent_lab").getEffectiveLevel()
+            ),
+        },
     )
 
 

@@ -12,6 +12,7 @@ from agent_lab.domain.list_comparison import (
     compare_arguments,
     input_schema,
 )
+from agent_lab.logging_config import timed
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,10 @@ def _reject_constant(value: str) -> None:
     raise ComparisonInputError("Non-standard JSON constants are not allowed.")
 
 
+@timed(
+    "compare_lists",
+    lambda result: "invalid_input" if "error" in json.loads(result) else "none",
+)
 def compare_json(arguments: str) -> str:
     """Execute the tool contract locally without an API or SDK runner.
 

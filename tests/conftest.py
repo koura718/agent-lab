@@ -68,3 +68,19 @@ def offline_only(monkeypatch, request):
     monkeypatch.setattr(socket.socket, "connect", deny_network)
     monkeypatch.setattr(socket.socket, "connect_ex", deny_network)
     monkeypatch.setattr(socket, "getaddrinfo", deny_network)
+
+
+@pytest.fixture(autouse=True)
+def restore_application_logging():
+    # CLI tests install a real stderr handler; don't keep a captured/closed stream.
+    import logging
+
+    package = logging.getLogger("agent_lab")
+    level = package.level
+    yield
+    root = logging.getLogger()
+    for handler in root.handlers[:]:
+        if getattr(handler, "_agent_lab_handler", False):
+            root.removeHandler(handler)
+            handler.close()
+    package.setLevel(level)

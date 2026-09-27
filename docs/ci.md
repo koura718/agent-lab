@@ -82,6 +82,13 @@ gh api repos/koura718/agent-lab/rulesets
 403は権限不足、404は未設定またはアクセス不可の可能性があります。
 rulesetsが存在する場合は対象ブランチ・enforcement・bypassも確認してください。
 
+## 保護設定の確認更新（2026-09-27 Step 9着手時）
+
+所有者が設定したprotect-main（ID 24071453）の詳細を読み取り確認しました。
+main対象、Active、bypassなし、PR必須・承認0、削除/force push禁止、
+Validate repository（GitHub Actions integration_id=15368）必須、最新baseへの追従必須です。
+上の未保護の記録はStep 7着手時点の履歴です。
+
 ## 推奨する保護設定（所有者が適用）
 
 GitHubのSettings → Rules → Rulesetsでmain用Branch rulesetを作成する案です。

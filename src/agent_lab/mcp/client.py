@@ -11,9 +11,10 @@ from agent_lab.config import (
     add_settings_arguments,
     load_settings,
 )
+from agent_lab.logging_config import cli_context, configure_logging, error_kind, timed
 from agent_lab.mcp.connection import diagnostic_connection
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("agent_lab.mcp.client")
 
 
 def _unique_object(pairs):
@@ -43,6 +44,7 @@ def parse_arguments(raw: str) -> dict:
     return result
 
 
+@timed("mcp_request", lambda result: "tool_error" if result[1] else "none")
 async def execute(
     command: str,
     settings: Settings,
@@ -84,6 +86,7 @@ async def execute(
             return value, 0
 
 
+@cli_context()
 def cli(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     add_settings_arguments(parser)
@@ -97,21 +100,25 @@ def cli(argv: list[str] | None = None) -> int:
         settings = load_settings(args)
         arguments = parse_arguments(args.arguments) if args.command == "call" else None
     except ConfigurationError as error:
+        logger.error(
+            "Invalid configuration or CLI input",
+            extra={"error_kind": "configuration_error"},
+        )
         parser.error(str(error))
-    logging.basicConfig(
-        level=settings.log_level,
-        format="[%(asctime)s] [%(levelname)s] %(message)s",
-        datefmt="%Y-%m-%dT%H:%M:%S",
-    )
+    configure_logging(settings.log_level)
     try:
         output, code = asyncio.run(
             execute(args.command, settings, getattr(args, "tool", None), arguments)
         )
     except KeyboardInterrupt:
-        logger.warning("MCP client interrupted")
+        logger.warning("MCP client interrupted", extra={"error_kind": "cancelled"})
         return 130
     except Exception as error:  # noqa: BLE001 - sanitized CLI boundary
-        logger.error("MCP client failed (%s)", type(error).__name__)
+        logger.error(
+            "MCP client failed (%s)",
+            type(error).__name__,
+            extra={"error_kind": error_kind(error)},
+        )
         return 1
     print(json.dumps(output, ensure_ascii=False))
     return code
