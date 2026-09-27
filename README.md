@@ -486,7 +486,7 @@ uv run pytest -v
 
 通常のユニットテストでは、可能な限り外部 API を呼び出しません。
 
-Step 3のunit / ScriptedModel、Step 4の実stdio Server、Step 5のAgent経由MCP統合テストを実装済みです。実LLMを使うliveテストは後続工程で追加します。最終的な区分は以下です。
+Step 3のunit / ScriptedModel、Step 4の実stdio Server、Step 5のAgent経由MCP統合テストを実装済みです。Step 6で両経路の一致・Server異常終了・liveゲートを追加しました。区分は以下です。
 
 | 区分 | 対象 | 通常実行 |
 |---|---|---|
@@ -494,7 +494,10 @@ Step 3のunit / ScriptedModel、Step 4の実stdio Server、Step 5のAgent経由M
 | Integration | ローカルMCPの実プロセス・stdio通信 | 実行 |
 | Live | 実LLM API | 明示指定時のみ |
 
-API 使用料やネットワーク障害の影響を避けるため、実 API テストは明示的に実行する方針とします。
+通常の `pytest` とCIではlive 2件をスキップします。実API検証には
+`--run-live` と `OPENAI_API_KEY` / `AGENT_MODEL` の両方が必要です。
+明示指定時の設定不足は終了コード4、API失敗はテスト失敗として扱います。
+[テスト運用手順](docs/testing.md)に、区分別コマンド・受入条件・live実行方法を記載しています。
 
 ---
 
@@ -867,7 +870,7 @@ Template Repository の変更前後には、以下を確認します。
 ## Next Steps
 
 [Next Steps 3–6 詳細設計](docs/next-steps-3-6.md) に、入出力・構成・実装順序・受入条件をまとめています。
-Step 3〜5を実装済みです。Step 6でliveゲートなどのテスト方針を完成させます。
+Step 3〜6を実装済みです。通常テストはAPI不要、実API検証は明示実行です。
 
 | Step | 項目 | 状態 / 方針 |
 |---|---|---|
@@ -876,7 +879,7 @@ Step 3〜5を実装済みです。Step 6でliveゲートなどのテスト方針
 | 3 | Function Tool | 実装済み：compare_lists、入力検証、Agent登録、API不要テスト |
 | 4 | MCP Server | 実装済み：Python / stdio / 比較ロジック共有・実プロセステスト |
 | 5 | MCP Client | 実装済み：診断CLI・Agent接続・設定・timeout・終了処理 |
-| 6 | Integration Tests | ローカルServer・Agent連携を先行実装。liveゲートは後続 |
+| 6 | Integration Tests | 実装済み：経路一致・異常系・live明示ゲート・CI区分 |
 | 7 | GitHub Actions | validate.ymlでローカル統合テストも実行 |
 | 8 | Tracing | 後続。通常テストでは無効化する設計 |
 | 9 | Application Logging | 後続。3–6では最小のstderrログを導入予定 |

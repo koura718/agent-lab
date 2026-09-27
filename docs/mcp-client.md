@@ -109,4 +109,4 @@ mise exec -- uv run --frozen pytest -m integration -v
 - Toolの二重登録防止、APIキーを子環境に渡さないこと。
 - 接続timeout・呼出しtimeout・キャンセル・Agent全体timeout後の子プロセス回収。
 
-実LLMを使うliveテストの明示ゲートはStep 6で追加します。
+Step 6でliveテストの明示ゲートを追加しました。[テスト運用手順](testing.md)を参照してください。
