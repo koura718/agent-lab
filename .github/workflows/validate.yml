@@ -1,0 +1,72 @@
+name: Validate
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Install mise and project tools
+        uses: jdx/mise-action@v4
+        with:
+          cache: true
+          install: true
+
+      - name: Show tool versions
+        run: |
+          set -Eeuo pipefail
+
+          echo "mise:"
+          mise --version
+
+          echo
+          echo "Project tools:"
+          mise current
+
+          echo
+          echo "uv:"
+          uv --version
+
+          echo
+          echo "Python:"
+          python --version
+
+          echo
+          echo "Node.js:"
+          node --version
+
+          echo
+          echo "pnpm:"
+          pnpm --version
+
+      - name: Synchronize Python dependencies
+        run: |
+          set -Eeuo pipefail
+
+          uv sync --frozen
+
+      - name: Run validation
+        run: |
+          set -Eeuo pipefail
+
+          ./scripts/validate.sh
