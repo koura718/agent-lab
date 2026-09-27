@@ -339,6 +339,8 @@ git diff --check
 
 ---
 
+CI結果の取得とmain保護設定は[CI運用手順](docs/ci.md)を参照してください。
+
 ## Development Workflow
 
 基本的な開発フローです。
@@ -880,7 +882,7 @@ Step 3〜6を実装済みです。通常テストはAPI不要、実API検証は�
 | 4 | MCP Server | 実装済み：Python / stdio / 比較ロジック共有・実プロセステスト |
 | 5 | MCP Client | 実装済み：診断CLI・Agent接続・設定・timeout・終了処理 |
 | 6 | Integration Tests | 実装済み：経路一致・異常系・live明示ゲート・CI区分 |
-| 7 | GitHub Actions | validate.ymlでローカル統合テストも実行 |
+| 7 | GitHub Actions | JUnit結果を14日保存・失敗時手順を整備。main保護は別設定 |
 | 8 | Tracing | 後続。通常テストでは無効化する設計 |
 | 9 | Application Logging | 後続。3–6では最小のstderrログを導入予定 |
 | 10 | project rename / bootstrap | scripts/bootstrap.shあり。再利用検証は別途 |
