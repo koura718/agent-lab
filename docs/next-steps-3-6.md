@@ -1,6 +1,6 @@
 # Next Steps 3–6: Function Tool / MCP / Integration Tests
 
-- 状態: Step 3実装済み。Step 4〜6は設計段階
+- 状態: Step 3〜4実装済み。Step 5〜6の全体機能は後続工程
 - 作成日: 2026-09-27
 - 調査基準: main / 96a4180de84f6531985d3a460c1a9a2bd2791c41
 - 対象: Ubuntu 24.04、mise + uv、OpenAI Agents SDK
@@ -13,7 +13,8 @@ API不要の境界テストとScriptedModelによるRunnerテストを追加し�
 [契約](tool-contract.md)と[運用手順](runbook.md)が実装済み機能の仕様です。
 デコレータによる自動schema生成案は、不明キー拒否と厳密なJSON検証のため、
 FunctionToolの直接生成へ具体化しました。
-TOML設定、MCP、liveゲートは未実装です。以下の現状表は設計作成時点の記録です。
+Step 4のMCP Server・実stdioテストを追加済みです。[MCP Server仕様](mcp-server.md)を参照してください。
+TOML設定、Agent側MCP Client、liveゲートは未実装です。以下の現状表は設計作成時点の記録です。
 
 ## 1. 現状と変更範囲
 

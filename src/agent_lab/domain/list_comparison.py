@@ -42,3 +42,31 @@ def compare_lists(source: list[str], baseline: list[str]) -> ComparisonResult:
         "source_only": sorted(source_set - baseline_set),
         "baseline_only": sorted(baseline_set - source_set),
     }
+
+
+def compare_arguments(payload: object) -> ComparisonResult:
+    """Validate the shared object boundary before comparing its arrays."""
+    if not isinstance(payload, dict) or set(payload) != {"source", "baseline"}:
+        raise ComparisonInputError("Provide exactly source and baseline fields.")
+    return compare_lists(payload["source"], payload["baseline"])
+
+
+def input_schema() -> dict:
+    """Return a fresh transport-independent JSON Schema."""
+    return {
+        "type": "object",
+        "properties": {
+            field: {
+                "type": "array",
+                "maxItems": MAX_ITEMS,
+                "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": MAX_ITEM_LENGTH,
+                },
+            }
+            for field in ("source", "baseline")
+        },
+        "required": ["source", "baseline"],
+        "additionalProperties": False,
+    }
