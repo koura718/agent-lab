@@ -1,2 +1,1 @@
-def main() -> None:
-    print("Hello from agent-lab!")
+"""AI Agent Lab package."""

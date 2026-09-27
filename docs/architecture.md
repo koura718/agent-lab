@@ -2,13 +2,15 @@
 
 ## Next Steps 3–6 の具体化
 
-[詳細設計](next-steps-3-6.md) に、Function Tool / MCP Server / MCP Client / Integration Testsの実装計画を定義しました（機能は未実装）。
+[詳細設計](next-steps-3-6.md) に、Function Tool / MCP Server / MCP Client / Integration Testsの実装計画を定義しました。Step 3のFunction Tool・Agent factory・CLI・API不要テストは実装済みです。MCPは後続工程です。
 
 - 初回MCP ServerはPython / stdioを採用し、Function Toolとcompare_listsのドメイン関数を共有します。
 - 下記のNode.js MCP構成は将来候補です。
 - テストはunit / ローカルintegration / 外部APIを呼ぶliveへ分離します。ローカルintegrationはネットワーク・課金不要です。
 - GitHub Actionsのvalidate.ymlはすでに存在し、下記CI構成の基盤を実装済みです。
 - 今回対象の3–6については詳細設計を参照してください。
+
+Step 3の実装仕様は[Tool契約](tool-contract.md)、操作手順は[運用手順](runbook.md)を参照してください。
 
 ## 1. Overview
 
