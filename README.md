@@ -705,7 +705,8 @@ ANTHROPIC_API_KEY=
 
 ## Logging
 
-Agent や Tool の運用ログが必要になった場合は、以下の考え方で設計します。
+Agent・Tool・MCPのログ設定を共通化しています。stderrに時刻・レベル・実行ID・イベント・処理時間・エラー分類を出力します。
+詳細と確認手順は[Logging運用手順](docs/logging.md)を参照してください。
 
 ```text
 INFO
@@ -884,7 +885,7 @@ Step 3〜6を実装済みです。通常テストはAPI不要、実API検証は�
 | 6 | Integration Tests | 実装済み：経路一致・異常系・live明示ゲート・CI区分 |
 | 7 | GitHub Actions | JUnit結果を14日保存・失敗時手順を整備。main保護は別設定 |
 | 8 | Tracing | 後続。通常テストでは無効化する設計 |
-| 9 | Application Logging | 後続。3–6では最小のstderrログを導入予定 |
+| 9 | Application Logging | 実装済み：共通stderrログ・実行ID・処理時間・エラー分類 |
 | 10 | project rename / bootstrap | scripts/bootstrap.shあり。再利用検証は別途 |
 
 「ファイルあり」は存在確認を示し、本変更で実行検証済みという意味ではありません。

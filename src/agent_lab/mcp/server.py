@@ -3,7 +3,6 @@
 import asyncio
 import json
 import logging
-import sys
 from typing import Any
 
 from mcp import types
@@ -16,8 +15,9 @@ from agent_lab.domain.list_comparison import (
     compare_arguments,
     input_schema,
 )
+from agent_lab.logging_config import cli_context, error_kind, timed
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("agent_lab.mcp.server")
 
 
 async def list_tools(
@@ -67,6 +67,12 @@ def _error_result(code: str, message: str) -> types.CallToolResult:
     )
 
 
+@timed(
+    "mcp_tool",
+    lambda result: (
+        "tool_error" if result.model_dump(by_alias=True).get("isError") else "none"
+    ),
+)
 async def call_tool(
     context: ServerRequestContext[Any], params: types.CallToolRequestParams
 ) -> types.CallToolResult:
@@ -99,6 +105,7 @@ def create_server() -> Server:
     )
 
 
+@timed("mcp_server")
 async def main() -> None:
     server = create_server()
     logger.info("MCP stdio server starting")
@@ -111,20 +118,20 @@ async def main() -> None:
         logger.info("MCP stdio server stopped")
 
 
+@cli_context(server=True)
 def cli() -> int:
-    logging.basicConfig(
-        level=logging.INFO,
-        stream=sys.stderr,
-        format="[%(asctime)s] [%(levelname)s] %(message)s",
-        datefmt="%Y-%m-%dT%H:%M:%S",
-    )
+
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        logger.warning("MCP server interrupted")
+        logger.warning("MCP server interrupted", extra={"error_kind": "cancelled"})
         return 130
     except Exception as error:  # noqa: BLE001 - no request data in terminal errors
-        logger.error("MCP server failed (%s)", type(error).__name__)
+        logger.error(
+            "MCP server failed (%s)",
+            type(error).__name__,
+            extra={"error_kind": error_kind(error)},
+        )
         return 1
     return 0
 
