@@ -1,6 +1,8 @@
-# Function Tool 運用手順
+# Function Tool / MCP 運用手順
 
 Step 4のServerと統合テストについては[MCP Server手順](mcp-server.md)を参照してください。
+
+Step 5の診断CLI・Agent接続・設定は[MCP Client手順](mcp-client.md)を参照してください。
 
 ## 前提
 
@@ -40,7 +42,7 @@ mise exec -- uv run --frozen agent-lab \
 ## 実モデルからのTool Calling（任意・API課金あり）
 
 .envは自動で読み込みません。自分で管理する.envをBashから読み込みます。
-モデル名は--model > AGENT_MODEL > SDK既定値です。
+モデル名は--model > AGENT_MODEL > 明示したTOML > SDK既定値です。
 
 ```bash
 (
@@ -55,8 +57,8 @@ mise exec -- uv run --frozen agent-lab \
 引数なしのpython -m agent_lab.mainも、従来のAPI接続確認プロンプトを実行します。
 agent-labもこの入口に統一したため、従来の挨拶表示から実モデル実行に変わります。
 APIキー未設定は終了コード2です。API不要の確認には必ず--compare-jsonを指定します。
-Step 3では最大5ターン、全体60秒、tracing無効を固定値としています。
-TOML設定・MCPモード・--run-liveは後続工程で追加します。
+既定値は最大5ターン、全体60秒です。Step 5でTOML・CLIによる設定とMCPモードを追加しました。
+tracingは無効です。liveテストの明示ゲートはStep 6で追加します。
 
 ## 出力・ログ・終了コード
 
@@ -86,7 +88,7 @@ mise exec -- uv run --frozen ruff format --check .
 | APIキー未設定 | .envを読んだshellで実行。API不要なら--compare-json |
 | モデル/APIエラー | モデル利用権限・認証・接続を確認。キーは共有しない |
 | timeout / ターン上限 | 入力と依頼を簡潔にして再実行。無限再試行しない |
-| MCPモード拒否 | Step 3では未実装。functionを使用 |
+| MCPモードで--compare-jsonが拒否される | API不要のMCP確認にはagent-lab-mcp-clientを使用 |
 
 - [ ] 通常テスト成功
 - [ ] API不要の比較が期待JSONを返す

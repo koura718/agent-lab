@@ -255,7 +255,7 @@ uv run --frozen agent-lab --compare-json '{"source":["A","B","B"],"baseline":["B
 uv run --frozen agent-lab --tool-mode function --prompt 'compare_listsを使いsource=["A","B"]とbaseline=["B","C"]を比較してください。'
 ```
 
-モデル指定は `--model` > `AGENT_MODEL` > SDK既定値です。.envは自動読込みしません。
+モデル指定は `--model` > `AGENT_MODEL` > 明示したTOML > SDK既定値です。.envは自動読込みしません。
 引数なし実行は従来のAPI接続確認を行います。
 console scriptの `agent-lab` も同じ入口へ統一したため、以前の挨拶表示から動作が変わります。
 
@@ -281,7 +281,21 @@ uv run --frozen python -m agent_lab.mcp.server
 ```
 
 [MCP Server仕様・操作手順](docs/mcp-server.md)を参照してください。
-AgentからのMCP接続とClient CLIはStep 5で追加します。
+
+## MCP Client（Step 5）
+
+API不要でTool一覧と比較結果を確認できます。ClientがServerを起動・終了します。
+
+```bash
+uv run --frozen agent-lab-mcp-client list-tools
+uv run --frozen agent-lab-mcp-client call compare_lists \
+  --arguments '{"source":["A","B","B"],"baseline":["B","C"]}'
+```
+
+Agentから同じServerを使う場合は `agent-lab --tool-mode mcp --prompt '...'` を使用します
+（APIキー・課金あり）。Function Toolとの二重登録は行いません。
+設定はCLI > 環境変数 > 明示したTOML > 既定値です。
+[MCP Client仕様・設定・検証手順](docs/mcp-client.md)を参照してください。
 
 ---
 
@@ -472,7 +486,7 @@ uv run pytest -v
 
 通常のユニットテストでは、可能な限り外部 API を呼び出しません。
 
-Step 3のunit / ScriptedModelとStep 4の実stdio Server統合テストを実装済みです。実LLMを使うliveテストは後続工程で追加します。最終的な区分は以下です。
+Step 3のunit / ScriptedModel、Step 4の実stdio Server、Step 5のAgent経由MCP統合テストを実装済みです。実LLMを使うliveテストは後続工程で追加します。最終的な区分は以下です。
 
 | 区分 | 対象 | 通常実行 |
 |---|---|---|
@@ -853,7 +867,7 @@ Template Repository の変更前後には、以下を確認します。
 ## Next Steps
 
 [Next Steps 3–6 詳細設計](docs/next-steps-3-6.md) に、入出力・構成・実装順序・受入条件をまとめています。
-Step 3〜4を実装済みです。Step 5〜6の全体機能は後続工程です。
+Step 3〜5を実装済みです。Step 6でliveゲートなどのテスト方針を完成させます。
 
 | Step | 項目 | 状態 / 方針 |
 |---|---|---|
@@ -861,8 +875,8 @@ Step 3〜4を実装済みです。Step 5〜6の全体機能は後続工程です
 | 2 | scripts/validate.sh | ファイルあり |
 | 3 | Function Tool | 実装済み：compare_lists、入力検証、Agent登録、API不要テスト |
 | 4 | MCP Server | 実装済み：Python / stdio / 比較ロジック共有・実プロセステスト |
-| 5 | MCP Client | 設計済み：診断ClientとAgent接続を分離 |
-| 6 | Integration Tests | ローカルServer検証を先行実装。Agent連携・liveは後続 |
+| 5 | MCP Client | 実装済み：診断CLI・Agent接続・設定・timeout・終了処理 |
+| 6 | Integration Tests | ローカルServer・Agent連携を先行実装。liveゲートは後続 |
 | 7 | GitHub Actions | validate.ymlでローカル統合テストも実行 |
 | 8 | Tracing | 後続。通常テストでは無効化する設計 |
 | 9 | Application Logging | 後続。3–6では最小のstderrログを導入予定 |
