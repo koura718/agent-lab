@@ -33,7 +33,7 @@ def test_default_prompt_and_model_precedence(monkeypatch):
     monkeypatch.setenv("AGENT_MODEL", "env-model")
     calls = []
 
-    async def fake_main(prompt, model):
+    async def fake_main(prompt, model, settings):
         calls.append((prompt, model))
 
     monkeypatch.setattr(app, "main", fake_main)
@@ -56,7 +56,7 @@ def test_run_errors_are_sanitized(monkeypatch, caplog, error, code):
     assert "secret-value" not in caplog.text
 
 
-def test_mcp_mode_not_available():
+def test_mcp_mode_rejects_local_compare():
     with pytest.raises(SystemExit) as error:
-        app.cli(["--tool-mode", "mcp"])
+        app.cli(["--tool-mode", "mcp", "--compare-json", "{}"])
     assert error.value.code == 2

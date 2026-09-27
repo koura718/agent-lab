@@ -6,6 +6,8 @@ import pytest
 from agents.tracing import set_trace_provider
 from agents.tracing.provider import DefaultTraceProvider
 
+from agent_lab.config import ENVIRONMENT
+
 
 @pytest.fixture(scope="session", autouse=True)
 def tracing_without_exporters():
@@ -20,7 +22,8 @@ def tracing_without_exporters():
 @pytest.fixture(autouse=True)
 def offline_only(monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    monkeypatch.delenv("AGENT_MODEL", raising=False)
+    for name in ENVIRONMENT.values():
+        monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("OPENAI_AGENTS_DISABLE_TRACING", "1")
 
     def deny_network(*args, **kwargs):

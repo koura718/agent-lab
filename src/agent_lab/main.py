@@ -6,9 +6,16 @@ import json
 import logging
 import os
 
-from agents import RunConfig, Runner
+from agents import Model, RunConfig, Runner
 
 from agent_lab.agent_factory import create_agent
+from agent_lab.config import (
+    ConfigurationError,
+    Settings,
+    add_settings_arguments,
+    load_settings,
+)
+from agent_lab.mcp.connection import agent_connection
 from agent_lab.tools.list_tools import compare_json
 
 DEFAULT_PROMPT = (
@@ -17,14 +24,30 @@ DEFAULT_PROMPT = (
 logger = logging.getLogger(__name__)
 
 
-async def main(prompt: str = DEFAULT_PROMPT, model: str | None = None) -> None:
-    async with asyncio.timeout(60):
-        result = await Runner.run(
+async def run_agent(prompt: str, model: str | Model | None, settings: Settings):
+    async with asyncio.timeout(settings.run_timeout_seconds):
+        if settings.tool_mode == "mcp":
+            async with agent_connection(settings) as server:
+                return await Runner.run(
+                    create_agent(model=model, mcp_server=server),
+                    prompt,
+                    max_turns=settings.max_turns,
+                    run_config=RunConfig(tracing_disabled=True),
+                )
+        return await Runner.run(
             create_agent(model=model),
             prompt,
-            max_turns=5,
+            max_turns=settings.max_turns,
             run_config=RunConfig(tracing_disabled=True),
         )
+
+
+async def main(
+    prompt: str = DEFAULT_PROMPT,
+    model: str | None = None,
+    settings: Settings | None = None,
+) -> None:
+    result = await run_agent(prompt, model, settings or Settings())
     print(result.final_output)
 
 
@@ -35,11 +58,18 @@ def cli(argv: list[str] | None = None) -> int:
     inputs.add_argument(
         "--prompt", help="Send this prompt to the model (API charges apply)."
     )
-    parser.add_argument("--model", default=os.getenv("AGENT_MODEL") or None)
-    parser.add_argument("--tool-mode", choices=["function"], default="function")
+    add_settings_arguments(parser)
     args = parser.parse_args(argv)
+    try:
+        settings = load_settings(args)
+    except ConfigurationError as error:
+        parser.error(str(error))
+    if args.compare_json is not None and settings.tool_mode != "function":
+        parser.error(
+            "--compare-json is local-only; use the MCP diagnostic CLI for MCP calls."
+        )
     logging.basicConfig(
-        level=logging.INFO,
+        level=settings.log_level,
         format="[%(asctime)s] [%(levelname)s] %(message)s",
         datefmt="%Y-%m-%dT%H:%M:%S",
     )
@@ -53,7 +83,11 @@ def cli(argv: list[str] | None = None) -> int:
     try:
         logger.info("Starting Agent")
         asyncio.run(
-            main(args.prompt if args.prompt is not None else DEFAULT_PROMPT, args.model)
+            main(
+                args.prompt if args.prompt is not None else DEFAULT_PROMPT,
+                settings.model,
+                settings,
+            )
         )
     except KeyboardInterrupt:
         logger.warning("Agent interrupted")

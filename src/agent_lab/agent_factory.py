@@ -1,11 +1,14 @@
 """Build Agents without performing model requests."""
 
 from agents import Agent, Model
+from agents.mcp import MCPServer
 
 from agent_lab.tools.list_tools import create_compare_lists_tool
 
 
-def create_agent(*, model: str | Model | None = None) -> Agent:
+def create_agent(
+    *, model: str | Model | None = None, mcp_server: MCPServer | None = None
+) -> Agent:
     return Agent(
         name="Assistant",
         instructions=(
@@ -16,5 +19,6 @@ def create_agent(*, model: str | Model | None = None) -> Agent:
             "Report tool input errors; never invent a successful comparison."
         ),
         model=model,
-        tools=[create_compare_lists_tool()],
+        tools=[] if mcp_server is not None else [create_compare_lists_tool()],
+        mcp_servers=[mcp_server] if mcp_server is not None else [],
     )

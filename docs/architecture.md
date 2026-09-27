@@ -2,7 +2,7 @@
 
 ## Next Steps 3–6 の具体化
 
-[詳細設計](next-steps-3-6.md) に、Function Tool / MCP Server / MCP Client / Integration Testsの実装計画を定義しました。Step 3のFunction Tool・Agent factory・CLI・API不要テストは実装済みです。Step 4のMCP stdio Serverと実プロセステストも実装済みです。Agent側MCP接続はStep 5です。
+[詳細設計](next-steps-3-6.md) に、Function Tool / MCP Server / MCP Client / Integration Testsの実装計画を定義しました。Step 3のFunction Tool・Agent factory・CLI・API不要テストは実装済みです。Step 4のMCP stdio Serverと実プロセステストも実装済みです。Step 5の診断Client・Agent側MCP接続・TOML設定も実装済みです。
 
 - 初回MCP ServerはPython / stdioを採用し、Function Toolとcompare_listsのドメイン関数を共有します。
 - 下記のNode.js MCP構成は将来候補です。
@@ -13,6 +13,8 @@
 Step 3の実装仕様は[Tool契約](tool-contract.md)、操作手順は[運用手順](runbook.md)を参照してください。
 
 Step 4の公開契約と終了処理は[MCP Server仕様](mcp-server.md)を参照してください。
+
+Step 5の接続管理と設定は[MCP Client仕様](mcp-client.md)を参照してください。
 
 ## 1. Overview
 
