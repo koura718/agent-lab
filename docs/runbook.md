@@ -58,7 +58,7 @@ mise exec -- uv run --frozen agent-lab \
 agent-labもこの入口に統一したため、従来の挨拶表示から実モデル実行に変わります。
 APIキー未設定は終了コード2です。API不要の確認には必ず--compare-jsonを指定します。
 既定値は最大5ターン、全体60秒です。Step 5でTOML・CLIによる設定とMCPモードを追加しました。
-tracingは無効です。liveテストの明示ゲートはStep 6で追加します。
+tracingは無効です。liveテストの明示ゲートは実装済みです。[テスト運用手順](testing.md)を参照してください。
 
 ## 出力・ログ・終了コード
 

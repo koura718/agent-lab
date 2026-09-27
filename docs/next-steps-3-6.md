@@ -1,6 +1,6 @@
 # Next Steps 3–6: Function Tool / MCP / Integration Tests
 
-- 状態: Step 3〜5実装済み。Step 6のliveゲート等は後続工程
+- 状態: Step 3〜6実装済み。実APIテスト自体の実行は利用者の明示指定時のみ
 - 作成日: 2026-09-27
 - 調査基準: main / 96a4180de84f6531985d3a460c1a9a2bd2791c41
 - 対象: Ubuntu 24.04、mise + uv、OpenAI Agents SDK
@@ -15,7 +15,8 @@ API不要の境界テストとScriptedModelによるRunnerテストを追加し�
 FunctionToolの直接生成へ具体化しました。
 Step 4のMCP Server・実stdioテストを追加済みです。[MCP Server仕様](mcp-server.md)を参照してください。
 Step 5のTOML設定・診断Client・Agent側MCP接続も実装済みです。[MCP Client仕様](mcp-client.md)を参照してください。
-liveゲートは未実装です。以下の現状表と計画は設計作成時点の記録です。
+Step 6の経路一致・異常系・liveゲートも実装済みです。[テスト運用手順](testing.md)を参照してください。
+以下の現状表と計画は設計作成時点の記録です。
 
 ## 1. 現状と変更範囲
 
@@ -307,7 +308,7 @@ uv run pytest -m live --run-live -v
 ./scripts/validate.sh
 ```
 
---run-liveは本設計で追加するオプションであり、現在は未実装。
+--run-liveはStep 6で実装済み。OPENAI_API_KEYとAGENT_MODELの両方が必要です。
 既存validate.shはpytest -vを呼ぶため、通常実行にローカル統合テストを組み込める。
 既存GitHub Actionsはそのvalidate.shを呼ぶため再利用できる。
 実API用secretを通常CIに追加しない。live用workflowは後続の別変更とする。

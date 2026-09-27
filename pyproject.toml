@@ -19,7 +19,11 @@ agent-lab-mcp = "agent_lab.mcp.server:cli"
 agent-lab-mcp-client = "agent_lab.mcp.client:cli"
 
 [tool.pytest.ini_options]
-markers = ["integration: real local MCP subprocess tests (no external API)"]
+addopts = "--strict-markers"
+markers = [
+    "integration: real local MCP subprocess tests (no external API)",
+    "live: explicit real-model tests (API charges apply)",
+]
 
 [build-system]
 requires = ["uv_build>=0.12.12,<0.13.0"]
