@@ -8,10 +8,9 @@ from agents import FunctionTool
 from agents.tool_context import ToolContext
 
 from agent_lab.domain.list_comparison import (
-    MAX_ITEM_LENGTH,
-    MAX_ITEMS,
     ComparisonInputError,
-    compare_lists,
+    compare_arguments,
+    input_schema,
 )
 
 logger = logging.getLogger(__name__)
@@ -48,9 +47,7 @@ def compare_json(arguments: str) -> str:
         except (ValueError, RecursionError) as error:
             # Includes oversized integers rejected by the JSON decoder.
             raise ComparisonInputError("Provide a valid JSON object.") from error
-        if not isinstance(payload, dict) or set(payload) != {"source", "baseline"}:
-            raise ComparisonInputError("Provide exactly source and baseline fields.")
-        result = compare_lists(payload["source"], payload["baseline"])
+        result = compare_arguments(payload)
     except ComparisonInputError as error:
         logger.warning("compare_lists rejected invalid input")
         return json.dumps({"error": {"code": "INVALID_INPUT", "message": str(error)}})
@@ -72,23 +69,7 @@ def create_compare_lists_tool() -> FunctionTool:
             "Preserve case and whitespace; do not normalize Unicode. "
             "Invalid input returns an error object, not comparison results."
         ),
-        params_json_schema={
-            "type": "object",
-            "properties": {
-                field: {
-                    "type": "array",
-                    "maxItems": MAX_ITEMS,
-                    "items": {
-                        "type": "string",
-                        "minLength": 1,
-                        "maxLength": MAX_ITEM_LENGTH,
-                    },
-                }
-                for field in ("source", "baseline")
-            },
-            "required": ["source", "baseline"],
-            "additionalProperties": False,
-        },
+        params_json_schema=input_schema(),
         on_invoke_tool=_invoke_compare_lists,
         strict_json_schema=True,
     )

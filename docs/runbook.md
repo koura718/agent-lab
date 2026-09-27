@@ -1,4 +1,6 @@
-# Step 3 運用手順
+# Function Tool 運用手順
+
+Step 4のServerと統合テストについては[MCP Server手順](mcp-server.md)を参照してください。
 
 ## 前提
 
@@ -92,7 +94,7 @@ mise exec -- uv run --frozen ruff format --check .
 - [ ] validate成功、git diff --check成功
 
 問題時はPRの変更をrevertしてuv sync --frozenで同期します。
-依存パッケージの追加・変更、データ移行はありません。
+データ移行はありません。依存変更を含むPRではpyproject.tomlとuv.lockを一緒に戻してください。
 
 ## これだけ覚えればOK
 

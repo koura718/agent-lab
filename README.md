@@ -263,6 +263,28 @@ console scriptの `agent-lab` も同じ入口へ統一したため、以前の�
 
 ---
 
+## MCP Server（Step 4）
+
+compare_listsを別プロセスのstdio Serverで公開します。APIキーは不要です。
+
+```bash
+uv run --frozen pytest -m integration -v
+```
+
+実SDK ClientがServerを起動し、Tool一覧・比較・エラー・終了を確認します。
+Function Toolと同じ比較関数・入力schemaを使用し、ログはstderrに出力します。
+
+Server単体の起動コマンドは次のとおりです（stdinの入力待ちになります）。
+
+```bash
+uv run --frozen python -m agent_lab.mcp.server
+```
+
+[MCP Server仕様・操作手順](docs/mcp-server.md)を参照してください。
+AgentからのMCP接続とClient CLIはStep 5で追加します。
+
+---
+
 ## Validation
 
 基本的な品質確認は、以下でまとめて実行します。
@@ -450,7 +472,7 @@ uv run pytest -v
 
 通常のユニットテストでは、可能な限り外部 API を呼び出しません。
 
-Step 3のunit / ScriptedModelテストを実装済みです。MCP統合テストとliveテストは後続工程で追加します。最終的な区分は以下です。
+Step 3のunit / ScriptedModelとStep 4の実stdio Server統合テストを実装済みです。実LLMを使うliveテストは後続工程で追加します。最終的な区分は以下です。
 
 | 区分 | 対象 | 通常実行 |
 |---|---|---|
@@ -831,17 +853,17 @@ Template Repository の変更前後には、以下を確認します。
 ## Next Steps
 
 [Next Steps 3–6 詳細設計](docs/next-steps-3-6.md) に、入出力・構成・実装順序・受入条件をまとめています。
-Step 3を実装済みです。Step 4〜6は設計段階です。
+Step 3〜4を実装済みです。Step 5〜6の全体機能は後続工程です。
 
 | Step | 項目 | 状態 / 方針 |
 |---|---|---|
 | 1 | scripts/setup.sh | ファイルあり |
 | 2 | scripts/validate.sh | ファイルあり |
 | 3 | Function Tool | 実装済み：compare_lists、入力検証、Agent登録、API不要テスト |
-| 4 | MCP Server | 設計済み：Python / stdio / 比較ロジック共有 |
+| 4 | MCP Server | 実装済み：Python / stdio / 比較ロジック共有・実プロセステスト |
 | 5 | MCP Client | 設計済み：診断ClientとAgent接続を分離 |
-| 6 | Integration Tests | 設計済み：通常は外部APIなし、liveは明示実行 |
-| 7 | GitHub Actions | validate.ymlあり。ローカル統合テストを追加予定 |
+| 6 | Integration Tests | ローカルServer検証を先行実装。Agent連携・liveは後続 |
+| 7 | GitHub Actions | validate.ymlでローカル統合テストも実行 |
 | 8 | Tracing | 後続。通常テストでは無効化する設計 |
 | 9 | Application Logging | 後続。3–6では最小のstderrログを導入予定 |
 | 10 | project rename / bootstrap | scripts/bootstrap.shあり。再利用検証は別途 |

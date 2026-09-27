@@ -83,7 +83,7 @@ def test_unexpected_domain_error_fails_run(monkeypatch):
     def broken(*args):
         raise RuntimeError("internal failure")
 
-    monkeypatch.setattr(list_tools, "compare_lists", broken)
+    monkeypatch.setattr(list_tools, "compare_arguments", broken)
     with pytest.raises(RuntimeError):
         invoke('{"source":[],"baseline":[]}')
 

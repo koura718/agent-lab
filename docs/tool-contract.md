@@ -66,4 +66,5 @@ uv run --frozen pytest -v
 トレースはHTTP exporterを登録しないproviderで無効化します。
 SDK 0.22.2のScriptedModelで、Tool要求→実Tool実行→結果受渡し→最終応答を確認します。
 これは決定的なローカル検証で、実モデルが適切にToolを選ぶかの評価ではありません。
-MCPとliveテストはStep 4〜6で追加します。
+Step 4のMCP Serverとローカル統合テストは実装済みです。[MCP契約](mcp-server.md)を参照してください。
+Agent側MCP接続とliveテストは後続工程です。
