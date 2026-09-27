@@ -1,10 +1,19 @@
 # Next Steps 3–6: Function Tool / MCP / Integration Tests
 
-- 状態: 設計案（機能は未実装）
+- 状態: Step 3実装済み。Step 4〜6は設計段階
 - 作成日: 2026-09-27
 - 調査基準: main / 96a4180de84f6531985d3a460c1a9a2bd2791c41
 - 対象: Ubuntu 24.04、mise + uv、OpenAI Agents SDK
 - 成果: 同じ処理を Function Tool とローカル MCP の両方から呼び出し、課金なしで継続検証する。
+
+## 実装状況（Step 3）
+
+compare_listsのドメイン関数、明示JSON SchemaのFunctionTool、Agent factory、CLI、
+API不要の境界テストとScriptedModelによるRunnerテストを追加しました。
+[契約](tool-contract.md)と[運用手順](runbook.md)が実装済み機能の仕様です。
+デコレータによる自動schema生成案は、不明キー拒否と厳密なJSON検証のため、
+FunctionToolの直接生成へ具体化しました。
+TOML設定、MCP、liveゲートは未実装です。以下の現状表は設計作成時点の記録です。
 
 ## 1. 現状と変更範囲
 

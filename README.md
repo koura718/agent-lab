@@ -23,7 +23,7 @@ AI Agent 開発・検証用の再利用可能なスターターテンプレー�
 
 将来的には、以下への拡張を想定しています。
 
-- Function Tools
+- Function Tools の追加拡張
 - MCP Tools
 - Structured Output
 - Tracing
@@ -232,6 +232,37 @@ OpenAI Agents SDK は正常に動作しています。
 
 ---
 
+## Function Tool（Step 3）
+
+APIキーなしで比較できます。.envの読込みも不要です。
+
+```bash
+uv run --frozen agent-lab --compare-json '{"source":["A","B","B"],"baseline":["B","C"]}'
+```
+
+```json
+{"same":["B"],"source_only":["A"],"baseline_only":["C"]}
+```
+
+同じ処理は `python -m agent_lab.main --compare-json ...` でも利用できます。
+両配列は必須、各1,000要素以下、各文字列1〜256文字です。
+重複を除去しソートします。大小文字・空白・Unicode表記は保持します。
+不正入力はerror JSONと終了コード2を返します。ログはstderr、結果はstdoutです。
+
+実モデルからToolを使う場合（APIキー設定・課金あり）:
+
+```bash
+uv run --frozen agent-lab --tool-mode function --prompt 'compare_listsを使いsource=["A","B"]とbaseline=["B","C"]を比較してください。'
+```
+
+モデル指定は `--model` > `AGENT_MODEL` > SDK既定値です。.envは自動読込みしません。
+引数なし実行は従来のAPI接続確認を行います。
+console scriptの `agent-lab` も同じ入口へ統一したため、以前の挨拶表示から動作が変わります。
+
+[入力・Tool契約](docs/tool-contract.md) / [実行・障害対応手順](docs/runbook.md)
+
+---
+
 ## Validation
 
 基本的な品質確認は、以下でまとめて実行します。
@@ -409,7 +440,7 @@ Agent
 
 テストは `pytest` を使用します。
 
-現在の smoke test では、OpenAI Agents SDK の `Agent` オブジェクトが正常に生成できることを確認します。
+smoke testに加え、compare_listsの境界条件・Function Tool登録・CLI・ScriptedModelによるTool呼出しをAPI不要で検証します。通常テストではネットワーク接続とtracingを無効化します。
 
 ```bash
 uv run pytest -v
@@ -419,7 +450,7 @@ uv run pytest -v
 
 通常のユニットテストでは、可能な限り外部 API を呼び出しません。
 
-Next Steps 3–6では、以下の3区分へ拡張する設計です（現時点では未実装）。
+Step 3のunit / ScriptedModelテストを実装済みです。MCP統合テストとliveテストは後続工程で追加します。最終的な区分は以下です。
 
 | 区分 | 対象 | 通常実行 |
 |---|---|---|
@@ -800,13 +831,13 @@ Template Repository の変更前後には、以下を確認します。
 ## Next Steps
 
 [Next Steps 3–6 詳細設計](docs/next-steps-3-6.md) に、入出力・構成・実装順序・受入条件をまとめています。
-この設計文書の追加時点では、3–6の機能は未実装です。
+Step 3を実装済みです。Step 4〜6は設計段階です。
 
 | Step | 項目 | 状態 / 方針 |
 |---|---|---|
 | 1 | scripts/setup.sh | ファイルあり |
 | 2 | scripts/validate.sh | ファイルあり |
-| 3 | Function Tool | 設計済み：副作用のないcompare_lists |
+| 3 | Function Tool | 実装済み：compare_lists、入力検証、Agent登録、API不要テスト |
 | 4 | MCP Server | 設計済み：Python / stdio / 比較ロジック共有 |
 | 5 | MCP Client | 設計済み：診断ClientとAgent接続を分離 |
 | 6 | Integration Tests | 設計済み：通常は外部APIなし、liveは明示実行 |
