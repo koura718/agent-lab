@@ -3,7 +3,7 @@
 ## 概要
 
 全CLIのログ設定をlogging_config.pyへ集約しました。比較本体・stdoutの結果JSON・
-終了コード・MCP通信契約は維持します。Tracingは引き続き無効です。
+終了コード・MCP通信契約は維持します。Tracingは既定で無効です。Step 8で明示指定時のメタデータ送信を追加しました。[Tracing手順](tracing.md)を参照してください。
 
 ```text
 [2026-09-27T10:00:00Z] [INFO] run_id=0123456789abcdef0123456789abcdef event=mcp_request_completed duration_ms=850.321 error_kind=none completed

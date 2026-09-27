@@ -52,7 +52,7 @@ OpenAI Agents SDKのMCPServerStdioをAgentに渡します。MCPモードではFu
 登録せず、Serverから取得したcompare_listsだけを使用します。
 `--tool-mode function` が既定値です。`--compare-json` はfunction専用です。
 診断CLIは設定内のtool_modeにかかわらずMCPを使用します。
-tracingは無効、Tool呼出しの自動再試行も無効です。
+tracingは既定で無効です。Agentは--tracingで有効化できます（[Tracing手順](tracing.md)）。Tool呼出しの自動再試行は無効です。
 
 ## 設定
 

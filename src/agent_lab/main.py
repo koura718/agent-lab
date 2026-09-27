@@ -6,7 +6,7 @@ import json
 import logging
 import os
 
-from agents import Model, RunConfig, Runner
+from agents import Model, Runner
 
 from agent_lab.agent_factory import create_agent
 from agent_lab.config import (
@@ -17,6 +17,7 @@ from agent_lab.config import (
 )
 from agent_lab.mcp.connection import agent_connection
 from agent_lab.tools.list_tools import compare_json
+from agent_lab.tracing_config import agent_run_config, tracing_runtime
 
 DEFAULT_PROMPT = (
     "OpenAI Agents SDK が正常に動作していることを日本語で短く確認してください。"
@@ -28,6 +29,7 @@ logger = logging.getLogger("agent_lab.main")
 
 @timed("agent")
 async def run_agent(prompt: str, model: str | Model | None, settings: Settings):
+    run_config = agent_run_config(settings)
     async with asyncio.timeout(settings.run_timeout_seconds):
         if settings.tool_mode == "mcp":
             async with agent_connection(settings) as server:
@@ -35,13 +37,13 @@ async def run_agent(prompt: str, model: str | Model | None, settings: Settings):
                     create_agent(model=model, mcp_server=server),
                     prompt,
                     max_turns=settings.max_turns,
-                    run_config=RunConfig(tracing_disabled=True),
+                    run_config=run_config,
                 )
         return await Runner.run(
             create_agent(model=model),
             prompt,
             max_turns=settings.max_turns,
-            run_config=RunConfig(tracing_disabled=True),
+            run_config=run_config,
         )
 
 
@@ -50,7 +52,9 @@ async def main(
     model: str | None = None,
     settings: Settings | None = None,
 ) -> None:
-    result = await run_agent(prompt, model, settings or Settings())
+    settings = settings or Settings()
+    with tracing_runtime(settings.tracing_enabled):
+        result = await run_agent(prompt, model, settings)
     print(result.final_output)
 
 
@@ -72,6 +76,8 @@ def cli(argv: list[str] | None = None) -> int:
             extra={"error_kind": "configuration_error"},
         )
         parser.error(str(error))
+    if args.compare_json is not None and settings.tracing_enabled:
+        parser.error("Tracing is available only for model-backed Agent runs.")
     if args.compare_json is not None and settings.tool_mode != "function":
         parser.error(
             "--compare-json is local-only; use the MCP diagnostic CLI for MCP calls."
