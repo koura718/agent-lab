@@ -419,15 +419,13 @@ uv run pytest -v
 
 通常のユニットテストでは、可能な限り外部 API を呼び出しません。
 
-以下は分離します。
+Next Steps 3–6では、以下の3区分へ拡張する設計です（現時点では未実装）。
 
-```text
-Unit Test
-  └─ 外部 API なし
-
-Integration Test
-  └─ 外部 API あり
-```
+| 区分 | 対象 | 通常実行 |
+|---|---|---|
+| Unit | 関数・入力検証 | 実行 |
+| Integration | ローカルMCPの実プロセス・stdio通信 | 実行 |
+| Live | 実LLM API | 明示指定時のみ |
 
 API 使用料やネットワーク障害の影響を避けるため、実 API テストは明示的に実行する方針とします。
 
@@ -801,18 +799,23 @@ Template Repository の変更前後には、以下を確認します。
 
 ## Next Steps
 
-今後は以下を順次追加します。
+[Next Steps 3–6 詳細設計](docs/next-steps-3-6.md) に、入出力・構成・実装順序・受入条件をまとめています。
+この設計文書の追加時点では、3–6の機能は未実装です。
 
-1. `scripts/setup.sh`
-2. `scripts/validate.sh`
-3. Function Tool
-4. MCP Server
-5. MCP Client
-6. Integration Tests
-7. GitHub Actions
-8. Tracing
-9. Application Logging
-10. 再利用時の project rename / bootstrap 自動化
+| Step | 項目 | 状態 / 方針 |
+|---|---|---|
+| 1 | scripts/setup.sh | ファイルあり |
+| 2 | scripts/validate.sh | ファイルあり |
+| 3 | Function Tool | 設計済み：副作用のないcompare_lists |
+| 4 | MCP Server | 設計済み：Python / stdio / 比較ロジック共有 |
+| 5 | MCP Client | 設計済み：診断ClientとAgent接続を分離 |
+| 6 | Integration Tests | 設計済み：通常は外部APIなし、liveは明示実行 |
+| 7 | GitHub Actions | validate.ymlあり。ローカル統合テストを追加予定 |
+| 8 | Tracing | 後続。通常テストでは無効化する設計 |
+| 9 | Application Logging | 後続。3–6では最小のstderrログを導入予定 |
+| 10 | project rename / bootstrap | scripts/bootstrap.shあり。再利用検証は別途 |
+
+「ファイルあり」は存在確認を示し、本変更で実行検証済みという意味ではありません。
 
 ---
 
