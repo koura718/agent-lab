@@ -29,6 +29,10 @@ trap on_error ERR
 
 cd "${PROJECT_ROOT}"
 
+# Never publish a report left by a previous validation attempt.
+mkdir -p reports
+rm -f -- reports/pytest.xml
+
 log_info "Project root: ${PROJECT_ROOT}"
 
 # -----------------------------------------------------------------------------
@@ -126,7 +130,7 @@ mise exec -- uv run ruff format --check .
 
 log_info "Running Python tests..."
 
-mise exec -- uv run pytest -v
+mise exec -- uv run --frozen pytest -v --junitxml=reports/pytest.xml
 
 # -----------------------------------------------------------------------------
 # 8. Python compile check

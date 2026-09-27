@@ -90,7 +90,8 @@ Tool未使用、契約違反、認証/API/timeoutエラーは失敗です。trac
 ## CIと障害対応
 
 既存validate.yml → validate.sh → pytestの入口を再利用します。
-workflow変更やAPI secretの追加は不要です。live workflowは追加しません。
+Step 7でJUnit XMLのArtifact保存と実行サマリーを追加しました。API secretやlive workflowは追加しません。
+詳細は[CI運用手順](ci.md)を参照してください。
 
 | 症状 | 対応 |
 |---|---|
