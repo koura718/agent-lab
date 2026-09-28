@@ -6,6 +6,10 @@ import pytest
 
 
 @pytest.mark.parametrize(
+    "provider,key_name",
+    [("openai", "OPENAI_API_KEY"), ("anthropic", "ANTHROPIC_API_KEY")],
+)
+@pytest.mark.parametrize(
     "enabled,key,model,expected",
     [
         (False, False, False, "skipped"),
@@ -15,7 +19,10 @@ import pytest
         (True, True, True, "passed"),
     ],
 )
-def test_live_gate(pytester, monkeypatch, enabled, key, model, expected):
+def test_live_gate(
+    pytester, monkeypatch, enabled, key, model, expected, provider, key_name
+):
+    monkeypatch.setenv("AGENT_PROVIDER", provider)
     pytester.makeconftest(Path(__file__).parents[1].joinpath("conftest.py").read_text())
     pytester.makeini("[pytest]\nmarkers = live: opt-in real model")
     pytester.makepyfile(
@@ -26,11 +33,11 @@ def test_live_gate(pytester, monkeypatch, enabled, key, model, expected):
     # Intentionally omit the marker: directory classification must protect this.
     (live / "test_probe.py").write_text(
         "import os\ndef test_probe():\n"
-        '    assert os.environ["OPENAI_API_KEY"] == "dummy-key"\n'
+        f'    assert os.environ["{key_name}"] == "dummy-key"\n'
         '    assert os.environ["AGENT_MODEL"] == "dummy-model"\n'
     )
     for name, value, present in [
-        ("OPENAI_API_KEY", "dummy-key", key),
+        (key_name, "dummy-key", key),
         ("AGENT_MODEL", "dummy-model", model),
     ]:
         if present:

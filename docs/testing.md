@@ -74,7 +74,9 @@ markerの誤記は--strict-markersでエラーにします。
 )
 ```
 
---run-live、空白以外のOPENAI_API_KEY、AGENT_MODELの3条件を要求します。
+--run-live、選択providerのAPIキー、AGENT_MODELを要求します。
+AGENT_PROVIDERはopenai（既定）またはanthropicです。後者ではANTHROPIC_API_KEYを確認します。
+[Claude検証手順](claude.md)を参照してください。
 キーやモデルが不足した明示実行は終了コード4です。自動skipにはしません。
 tests/live配下はmarkerの付け忘れがあってもliveに分類します。
 API呼出しは必ずテスト関数内に置き、モジュールimport時には実行しないでください。

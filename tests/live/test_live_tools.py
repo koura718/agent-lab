@@ -19,7 +19,12 @@ def test_live_compare_lists(mode):
             'Call compare_lists exactly once with source=["A","B","B"] '
             'and baseline=["B","C"], then briefly report the result.',
             os.environ["AGENT_MODEL"],
-            Settings(tool_mode=mode, max_turns=3, run_timeout_seconds=60),
+            Settings(
+                provider=os.getenv("AGENT_PROVIDER", "openai"),
+                tool_mode=mode,
+                max_turns=3,
+                run_timeout_seconds=60,
+            ),
         )
     )
     calls = [item for item in result.new_items if item.type == "tool_call_item"]

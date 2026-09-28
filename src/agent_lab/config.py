@@ -14,6 +14,7 @@ class ConfigurationError(ValueError):
 
 @dataclass(frozen=True)
 class Settings:
+    provider: str = "openai"
     tracing_enabled: bool = False
     tool_mode: str = "function"
     model: str | None = None
@@ -24,6 +25,8 @@ class Settings:
     log_level: str = "INFO"
 
     def __post_init__(self):
+        if self.provider not in ("openai", "anthropic"):
+            raise ConfigurationError("provider must be openai or anthropic.")
         if type(self.tracing_enabled) is not bool:
             raise ConfigurationError("tracing_enabled must be a boolean.")
         if self.tool_mode not in ("function", "mcp"):
@@ -53,12 +56,13 @@ class Settings:
 
 
 SECTIONS = {
-    "agent": {"tool_mode", "model", "max_turns", "run_timeout_seconds"},
+    "agent": {"provider", "tool_mode", "model", "max_turns", "run_timeout_seconds"},
     "mcp": {"connect_timeout_seconds", "call_timeout_seconds"},
     "logging": {"level"},
     "tracing": {"enabled"},
 }
 ENVIRONMENT = {
+    "provider": "AGENT_PROVIDER",
     "tracing_enabled": "AGENT_TRACING_ENABLED",
     "tool_mode": "AGENT_TOOL_MODE",
     "model": "AGENT_MODEL",
@@ -81,6 +85,7 @@ def add_settings_arguments(parser: argparse.ArgumentParser) -> None:
         default=None,
         help="Opt in to metadata tracing export to OpenAI.",
     )
+    parser.add_argument("--provider", choices=["openai", "anthropic"])
     parser.add_argument("--tool-mode", choices=["function", "mcp"])
     parser.add_argument("--model")
     parser.add_argument("--max-turns", type=int)
