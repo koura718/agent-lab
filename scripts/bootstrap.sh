@@ -5,6 +5,12 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 
+# Environment setup is explicit; preserve the existing template-rename interface.
+if [[ "${1:-}" == "--setup" ]]; then
+    shift
+    exec "${SCRIPT_DIR}/setup.sh" "$@"
+fi
+
 TEMPLATE_PROJECT_NAME="agent-lab"
 TEMPLATE_PACKAGE_NAME="agent_lab"
 
@@ -36,6 +42,7 @@ trap on_error ERR
 usage() {
     cat <<'EOF'
 Usage:
+  ./scripts/bootstrap.sh --setup [--check]
   ./scripts/bootstrap.sh
   ./scripts/bootstrap.sh --project-name PROJECT_NAME
   ./scripts/bootstrap.sh --project-name PROJECT_NAME --package-name PACKAGE_NAME
@@ -43,6 +50,9 @@ Usage:
   ./scripts/bootstrap.sh --force
 
 Options:
+  --setup [--check]
+      Set up this checkout without renaming it. Must be the first option.
+
   --project-name NAME
       New project/repository name.
 

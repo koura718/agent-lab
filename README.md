@@ -122,24 +122,25 @@ git clone <REPOSITORY_URL>
 cd agent-lab
 ```
 
-初期セットアップを実行します。
+初期セットアップを実行します（Step 10）。Git・miseは事前に必要です。
+[環境構築・再実行・障害対応手順](docs/bootstrap.md)を参照してください。
 
 ```bash
-./scripts/setup.sh
+./scripts/bootstrap.sh --setup
 ```
 
-`setup.sh` では、以下を行う想定です。
+`bootstrap.sh --setup` は `setup.sh` に委譲し、以下を行います。
 
 1. 必須コマンドの確認
 2. `mise.toml` に定義されたツールのインストール
-3. Python 依存関係の同期
+3. `uv.lock` 必須・`uv sync --frozen` によるPython依存関係の同期
 4. `.env` が存在しない場合に `.env.example` から生成
 5. 初期状態の validation
 
 環境を変更せず、前提条件だけ確認する場合:
 
 ```bash
-./scripts/setup.sh --check
+./scripts/bootstrap.sh --setup --check
 ```
 
 ---
@@ -894,7 +895,7 @@ Step 3〜6を実装済みです。通常テストはAPI不要、実API検証は�
 | 7 | GitHub Actions | JUnit結果を14日保存・失敗時手順を整備。main保護は別設定 |
 | 8 | Tracing | 実装済み：明示有効化・メタデータのみ送信・run_id連携 |
 | 9 | Application Logging | 実装済み：共通stderrログ・実行ID・処理時間・エラー分類 |
-| 10 | project rename / bootstrap | scripts/bootstrap.shあり。再利用検証は別途 |
+| 10 | 環境構築 / bootstrap | 実装済み：`--setup`・前提確認・固定依存・既存.env保持・API不要検証・CI。名前変更は既存の別機能 |
 
 「ファイルあり」は存在確認を示し、本変更で実行検証済みという意味ではありません。
 
