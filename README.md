@@ -1,911 +1,361 @@
 # AI Agent Lab
 
-OpenAI Codex、Claude Code、OpenAI Agents SDK、MCP を利用した  
-AI Agent 開発・検証用の再利用可能なスターターテンプレートです。
+OpenAI Agents SDKとMCPを使い、Toolの実装・接続・テスト・運用を学び、拡張するためのPythonプロジェクトです。
+文字列配列を比較する`compare_lists`を、Function Toolと別プロセスのMCP Serverから利用できます。
+Ubuntu 24.04を基準に、API不要の検証、実LLMの明示的な検証、CI、ログ、Tracing、環境構築を実装しています。
 
-このリポジトリは、GitHub Template Repository として利用することを想定しています。
+GitHub Template Repositoryとして再利用できます。ライセンスは[MIT](LICENSE)です。
+CodexとClaude Codeは開発支援ツールで、アプリケーションの実行に必須ではありません。
 
----
+## まず使うコマンド
 
-## Purpose
-
-このテンプレートでは、主に以下の技術を検証・開発します。
-
-- OpenAI Codex CLI
-- Claude Code
-- OpenAI Agents SDK
-- MCP Server / MCP Client
-- Python ベースの AI Agent
-- Agent の Tool Calling
-- AI Agent のテスト
-- lint / format / validation
-- GitHub Template Repository を利用した再利用可能な開発環境
-
-将来的には、以下への拡張を想定しています。
-
-- Function Tools の追加拡張
-- MCP Tools
-- Structured Output
-- Tracing
-- Retry / Timeout
-- Application Logging
-- Integration Tests
-- GitHub Actions CI
-- 複数 Agent 構成
-- 外部 API / DB 連携
-
----
-
-## Environment
-
-現在の基準環境です。
-
-| Component | Version |
-|---|---:|
-| OS | Ubuntu 24.04 |
-| Node.js | 24.21.0 |
-| pnpm | 12.3.4 |
-| Python | 3.14.7 |
-| uv | 0.12.12 |
-| mise | 2026.9.5 |
-
-実際に使用するランタイムバージョンは、原則として `mise.toml` を正とします。
-
-現在の `mise.toml`:
-
-```toml
-[tools]
-node = "24.21.0"
-pnpm = "12.3.4"
-python = "3.14.7"
-uv = "0.12.12"
-```
-
----
-
-## Repository Structure
-
-想定する標準構成です。
-
-```text
-agent-lab/
-├── .github/
-│   └── workflows/
-├── docs/
-│   └── architecture.md
-├── scripts/
-│   ├── setup.sh
-│   └── validate.sh
-├── src/
-│   └── agent_lab/
-│       ├── __init__.py
-│       └── main.py
-├── tests/
-│   └── test_smoke.py
-├── .env.example
-├── .gitignore
-├── AGENTS.md
-├── CLAUDE.md
-├── README.md
-├── mise.toml
-├── pyproject.toml
-└── uv.lock
-```
-
----
-
-## Requirements
-
-事前に以下が利用可能であることを前提とします。
-
-- Git
-- mise
-- GitHub CLI
-  - GitHub 操作を CLI から行う場合
-- OpenAI API Key
-  - OpenAI Agents SDK から実 API を呼び出す場合
-- Anthropic の認証
-  - Claude Code を利用する場合
-
-Python、uv、Node.js、pnpm は、原則として `mise.toml` から導入・管理します。
-
-OS のシステム Python を直接置き換えない方針とします。
-
----
-
-## Initial Setup
-
-リポジトリを取得します。
+Gitとmiseが利用可能なUbuntu 24.04で実行します。
 
 ```bash
-git clone <REPOSITORY_URL>
+git clone https://github.com/koura718/agent-lab.git
 cd agent-lab
 ```
 
-初期セットアップを実行します（Step 10）。Git・miseは事前に必要です。
-[環境構築・再実行・障害対応手順](docs/bootstrap.md)を参照してください。
+[mise.toml](mise.toml)の内容を確認し、信頼を許可してセットアップします。
 
 ```bash
+mise trust mise.toml
+./scripts/bootstrap.sh --setup --check &&
 ./scripts/bootstrap.sh --setup
 ```
 
-`bootstrap.sh --setup` は `setup.sh` に委譲し、以下を行います。
+`--check`は前提条件だけを確認します。通常の`--setup`はツール導入、固定依存の同期、
+未作成の`.env`の作成、lint・テスト等の検証まで実行します。
+既存の`.env`は上書きせず、内容も読み込みません。APIキーは不要ですが、依存のダウンロードには通信が必要です。
 
-1. 必須コマンドの確認
-2. `mise.toml` に定義されたツールのインストール
-3. `uv.lock` 必須・`uv sync --frozen` によるPython依存関係の同期
-4. `.env` が存在しない場合に `.env.example` から生成
-5. 初期状態の validation
+**環境構築には必ず`--setup`を付けてください。** 引数なしの`bootstrap.sh`は、
+ディレクトリ名に基づくプロジェクト名・Pythonパッケージ名変更の別機能です。
+従来の`./scripts/setup.sh`も同じ環境構築を実行します。
 
-環境を変更せず、前提条件だけ確認する場合:
+APIなしで比較します。
 
 ```bash
-./scripts/bootstrap.sh --setup --check
+mise exec -- uv run --frozen agent-lab --tool-mode function --no-tracing \
+  --compare-json '{"source":["A","B","B"],"baseline":["B","C"]}'
 ```
 
----
+```json
+{"same": ["B"], "source_only": ["A"], "baseline_only": ["C"]}
+```
 
-## Manual Setup
+日常の変更後の検証は次のコマンドです。
 
-スクリプトを使わず手動でセットアップする場合は、以下を実行します。
+```bash
+./scripts/validate.sh
+```
+
+詳しい導入・再実行・障害対応は[bootstrap手順](docs/bootstrap.md)を参照してください。
+
+## 実装済みの機能
+
+| Step | 項目 | 現在の実装 |
+|---|---|---|
+| 1 | Setup | miseのツール導入、固定依存の同期、.env作成、検証 |
+| 2 | Validation | Ruff、pytest、compile、Git差分・秘密情報の基本確認 |
+| 3 | Function Tool | compare_lists、厳密な入力検証、Agentへの登録 |
+| 4 | MCP Server | 比較本体を共有し、stdioでTool一覧・呼出しを公開 |
+| 5 | MCP Client | 診断CLI、Agent接続、timeout、子プロセス終了処理 |
+| 6 | Integration Tests | 両経路の一致、異常系、キャンセル、実LLMの明示ゲート |
+| 7 | CI | Ubuntu検証、JUnit保存14日、失敗時の調査手順 |
+| 8 | Tracing | 明示有効化、メタデータのみ送信、ログのrun_idとの対応 |
+| 9 | Application Logging | 共通stderrログ、実行ID、処理時間、エラー分類 |
+| 10 | Bootstrap | --setup入口、前提確認、再実行、既存.env保持、CI経由の検証 |
+
+2026-09-28時点のUbuntu検証結果は **157 passed, 2 skipped** です。
+2件のskipは明示実行しなかったliveテストです。別途、`gpt-5-mini`でFunction / MCPのlive 2件成功と、
+MCP経路のTraceのDashboard表示を確認しています。実LLMの結果はモデル・接続環境に依存します。
+
+## 環境と前提
+
+| 項目 | 基準・役割 |
+|---|---|
+| OS | Ubuntu 24.04。Windowsネイティブのスクリプト実行は未検証 |
+| Python | 3.14.7。アプリ本体・テストを実行 |
+| uv | 0.12.12。Python依存管理 |
+| Node.js / pnpm | 24.21.0 / 12.3.4。開発環境の共通ツール |
+| mise | 基準環境で2026.9.5。事前導入が必要 |
+| Git | clone・差分検証に必要 |
+| GitHub CLI | PR・CI等をCLIから操作する場合のみ必要 |
+| OpenAI APIキー | 実LLMを呼ぶ場合のみ必要 |
+
+ツールの固定値は[mise.toml](mise.toml)、Python依存の解決結果は[uv.lock](uv.lock)を正とします。
+アプリ本体はPythonで動作し、NodeサービスやDockerコンテナは起動しません。
+bootstrapはGit・miseのOS導入、sudo操作、シェル設定変更、開発支援CLIのインストールを行いません。
+
+手動で同期する場合もlockを使用します。lockが欠落した場合はGitから復元してください。
 
 ```bash
 mise install
-mise current
+mise exec -- uv sync --frozen
+./scripts/validate.sh
 ```
 
-Python 依存関係を同期します。
+## 比較処理とToolの使い方
+
+`compare_lists`は`source`と`baseline`を集合として比較します。
+入力を変更せず、ファイル操作・DB更新・外部通信も行いません。
+
+| 契約 | 内容 |
+|---|---|
+| 入力 | source / baselineの2配列が必須。空配列可、各1,000要素以下 |
+| 要素 | 文字列のみ、各1〜256文字。自動型変換なし |
+| 比較 | 重複を除去。大小文字・空白・Unicode表記は保持して区別 |
+| 結果 | same / source_only / baseline_onlyをPython文字列の標準順序でソート |
+| 不正入力 | 成功結果へ変換せず拒否。ローカルCLIはerror JSONと終了コード2 |
+
+[Tool契約](docs/tool-contract.md)に境界値とエラー形式を記載しています。
+
+### MCP診断CLI（API不要）
 
 ```bash
-uv sync --frozen
+mise exec -- uv run --frozen agent-lab-mcp-client --no-tracing list-tools
+
+mise exec -- uv run --frozen agent-lab-mcp-client --no-tracing \
+  call compare_lists --arguments '{"source":["A","B","B"],"baseline":["B","C"]}'
 ```
 
-`uv.lock` がまだ存在しない初期開発時のみ:
+ClientがローカルServerを起動し、初期化・要求・接続終了・子プロセス回収を行います。
+`list-tools`は名前・説明・入出力schema等を含む`{"tools": [...]}`、`call`は比較結果JSONを返します。
+共通オプションは`list-tools` / `call`より前に指定します。
+
+Serverをstdioクライアントから直接起動するときの入口は次のとおりです。
+単体実行はプロトコル入力待ちになるため、手動確認には診断CLIを使用してください。
 
 ```bash
-uv sync
+mise exec -- uv run --frozen agent-lab-mcp
 ```
 
----
+Serverは`python -m agent_lab.mcp.server`、Clientは`python -m agent_lab.mcp.client`でも起動できます。
+HTTP公開、任意の外部Serverコマンド、リモートURL接続の設定は現在の対象外です。
 
-## Environment Variables
+### 実LLMからToolを使う（任意・API課金あり）
 
-環境変数のテンプレートとして `.env.example` を使用します。
+bootstrapで作成した`.env`に、自分の`OPENAI_API_KEY`を設定してください。
+`.env.example`にはキーの値を保存しません。`ANTHROPIC_API_KEY`欄は開発支援用の雛形で、
+このアプリのモデル呼出しには使用しません。
 
-```env
-OPENAI_API_KEY=
-ANTHROPIC_API_KEY=
-```
-
-実際の環境では `.env` を作成します。
+自分で管理する`.env`をサブシェルで読み込み、モデルを指定して実行します。
+`gpt-5-mini`はこのプロジェクトでの検証済み例です。利用可能なモデルに合わせて変更できます。
 
 ```bash
-cp .env.example .env
-chmod 600 .env
+(
+  set -a
+  source .env
+  set +a
+  export AGENT_MODEL=gpt-5-mini
+  mise exec -- uv run --frozen agent-lab --tool-mode function --no-tracing \
+    --prompt 'compare_listsを使いsource=["A","B","B"]とbaseline=["B","C"]を比較してください。'
+)
 ```
 
-`.env` に必要な値を設定します。
+`--tool-mode mcp`に変更すると、Agentが別プロセスのServerから同じToolを使います。
+MCPモードではFunction Toolを二重登録しません。MCP Tool呼出しの自動再試行は無効です。
 
-例:
+`agent-lab`と`python -m agent_lab.main`は同じCLIです。
+**引数なし実行も実LLM APIを呼びます。** API不要の確認には`--compare-json`または診断CLIを使用してください。
 
-```env
-OPENAI_API_KEY=your_api_key_here
-ANTHROPIC_API_KEY=
+## 設定
+
+優先順位は **CLI > 環境変数 > 明示したTOML > 既定値** です。
+`.env`と`config/agent.toml`は自動読込みしません。
+各層で値を検証するため、下位層の不正値を上位層で隠すことはできません。
+
+| CLI | 環境変数 | TOML | 既定値 |
+|---|---|---|---|
+| --tool-mode | AGENT_TOOL_MODE | agent.tool_mode | function |
+| --model | AGENT_MODEL | agent.model | SDK既定 |
+| --max-turns | AGENT_MAX_TURNS | agent.max_turns | 5 |
+| --run-timeout | AGENT_RUN_TIMEOUT_SECONDS | agent.run_timeout_seconds | 60秒 |
+| --connect-timeout | MCP_CONNECT_TIMEOUT_SECONDS | mcp.connect_timeout_seconds | 10秒 |
+| --call-timeout | MCP_CALL_TIMEOUT_SECONDS | mcp.call_timeout_seconds | 10秒 |
+| --log-level | AGENT_LOG_LEVEL | logging.level | INFO |
+| --tracing / --no-tracing | AGENT_TRACING_ENABLED | tracing.enabled | false |
+
+TOMLを使う例です。
+
+```bash
+mise exec -- uv run --frozen agent-lab-mcp-client \
+  --config config/agent.toml --no-tracing --call-timeout 15 list-tools
 ```
 
-### Important
+timeoutは有限の正数で最大3,600秒、最大ターン数は1〜100、ログレベルはINFO / WARNING / ERRORです。
+終了時の子プロセス回収やTrace送信待ちがあるため、設定秒数がCLI全体の厳密な終了期限になるわけではありません。
+詳細は[MCP Client手順](docs/mcp-client.md)を参照してください。
 
-秘密情報は Git にコミットしません。
+## 構成
 
-`.env` が Git 管理対象外になっていることを確認します。
+| パス | 責務 |
+|---|---|
+| src/agent_lab/domain/list_comparison.py | SDK非依存の入力検証・比較処理 |
+| src/agent_lab/tools/list_tools.py | JSON境界・Function Toolアダプタ |
+| src/agent_lab/agent_factory.py | Function / MCPのAgent生成 |
+| src/agent_lab/main.py | ローカル比較・実LLM AgentのCLI |
+| src/agent_lab/mcp/ | stdio Server・診断Client・接続ライフサイクル |
+| src/agent_lab/config.py | CLI・環境変数・TOMLの設定と検証 |
+| src/agent_lab/logging_config.py | 共通ログ・実行ID・処理時間・エラー分類 |
+| src/agent_lab/tracing_config.py | 明示的なTracing・送信項目の制限 |
+| config/agent.toml | 秘密情報を含まない設定例 |
+| tests/unit/・tests/test_smoke.py | 比較・設定・CLI・bootstrap等の検証 |
+| tests/integration/ | 実MCP子プロセス・経路一致・終了処理等の検証 |
+| tests/live/ | 実LLMの明示実行テスト |
+| tests/fixtures/ | 遅延・異常終了を再現するテスト専用Server |
+| scripts/ | bootstrap・setup・validate |
+| .github/workflows/validate.yml | Ubuntu CI・JUnit保存 |
+| docs/ | 設計・契約・操作・障害対応手順 |
+
+Function ToolとMCP Serverは同じドメイン関数を呼びます。
+診断ClientはLLMを経由せずMCPを確認でき、AgentはFunction / MCPのいずれか一方を利用します。
+MCPは現在のPython環境で`shell`を介さず起動し、APIキーを子プロセスへ転送しません。
+[アーキテクチャ](docs/architecture.md)と[Step 3〜6の設計記録](docs/next-steps-3-6.md)も参照できます。
+
+## テストとCI
+
+`validate.sh`はRuff lint・format、pytest、Python compile、Git whitespace、
+`.env`のGit除外、`.env.example`のAPIキー欄を確認します。
+テストまで到達すると`reports/pytest.xml`を生成します。通常はlive 2件をスキップします。
+
+```bash
+# 全体検証
+./scripts/validate.sh
+
+# 実MCPプロセスを含む統合テストだけ
+mise exec -- uv run --frozen pytest -m integration -v
+
+# lint / formatの個別確認
+mise exec -- uv run --frozen ruff check .
+mise exec -- uv run --frozen ruff format --check .
+```
+
+通常テストはScriptedModelやモックを使い、モデルAPI・実Tracing endpointを呼びません。
+ネットワーク禁止fixtureは親テストプロセスに適用され、OSの通信隔離を提供するものではありません。
+Tracingテストではメモリ内sinkやHTTPモックで送信内容を検証します。
+
+実LLMのFunction / MCP両経路を検証するときだけ、次を実行します。
+
+```bash
+(
+  set -a
+  source .env
+  set +a
+  export AGENT_MODEL=gpt-5-mini
+  mise exec -- uv run --frozen pytest -m live --run-live -v --maxfail=1
+)
+```
+
+`--run-live`、`OPENAI_API_KEY`、`AGENT_MODEL`が必要です。
+明示実行時のキー・モデル不足は設定エラー、API失敗はテスト失敗になります。
+liveテストもTracingは無効です。詳細は[テスト手順](docs/testing.md)を参照してください。
+
+GitHub Actionsはmain向けPRとmainへのpushで、Ubuntu 24.04上のbootstrapを実行します。
+JUnitは`pytest-results-RUN_ID-ATTEMPT`というArtifact名で14日保存し、結果をSummaryに出します。
+XML未生成の失敗ではArtifactはありません。
+
+2026-09-28確認時点で、`protect-main` rulesetは有効です。
+PR経由・`Validate repository`成功・最新baseへの追従を必須とし、force push・削除を禁止しています。
+必須承認人数は0、bypass設定はありません。テンプレートから作成した別リポジトリでは別途設定が必要です。
+
+```bash
+gh run list --workflow validate.yml --limit 5
+```
+
+失敗ログ・Artifactの取得方法は[CI運用手順](docs/ci.md)を参照してください。
+
+## LoggingとTracing
+
+アプリのログはstderr、比較JSONやAgentの最終応答はstdoutです。
+MCP Serverのstdoutはプロトコル通信専用です。
+
+```text
+[2026-09-28T00:00:00Z] [INFO] run_id=0123456789abcdef0123456789abcdef event=mcp_tool_completed duration_ms=0.266 error_kind=none completed
+```
+
+UTC時刻、実行ID、イベント、処理時間、エラー分類を出力します。
+ClientとServerでrun_idを共有し、timeout・cancelled・invalid_input等を分類します。
+入力配列・プロンプト・APIキー・例外本文はアプリのイベントログに記録しません。
+ファイル保存・ローテーションは自動では行いません。詳しくは[Logging手順](docs/logging.md)を参照してください。
+
+Tracingは既定で無効です。実LLMの実行例の`--no-tracing`を`--tracing`へ変更すると有効になります。
+TraceにはID・処理種別・開始終了時刻・一般化したエラー等のメタデータだけを送ります。
+プロンプト・モデル応答・Tool入出力はTraceへ送らず、custom spanで階層と時間を確認できます。
+この本文除外はTraceの設定であり、モデルAPIのResponsesログとは別です。
+
+ログの`trace_id=trace_<run_id>`を、[OpenAI Platform](https://platform.openai.com/traces)の
+Agents SDKのTrace画面で確認します。`trace_enabled`は有効化の記録で、送信到達の保証ではありません。
+`OPENAI_AGENTS_DISABLE_TRACING=true`または`1`がある場合、有効化は設定エラーになります。
+ローカル比較・診断CLIはTracingを受け付けません。[Tracing手順](docs/tracing.md)を参照してください。
+
+## 開発と再利用
+
+[AGENTS.md](AGENTS.md)・[CLAUDE.md](CLAUDE.md)を確認し、ブランチで変更してPRを作成します。
+Python依存はuv、Node関連はpnpm、ランタイムはmiseで管理します。
+変更後は`./scripts/validate.sh`と`git diff --check`で確認してください。
+実APIテストは日常検証とは別に、必要な場合だけ実行します。
+
+このリポジトリはGitHubのTemplate Repositoryとして有効化済みです（2026-09-28確認）。
+GitHub CLIで別リポジトリを作る例です。
+
+```bash
+gh repo create my-agent --private --template koura718/agent-lab --clone
+cd my-agent
+mise trust mise.toml
+./scripts/bootstrap.sh --setup
+```
+
+テンプレートをコピーしてもPythonパッケージ名`agent_lab`やCLI名`agent-lab`はそのままです。
+既存の名前変更機能は`bootstrap.sh --project-name ... --package-name ...`ですが、
+Step 10で検証したのは環境構築の`--setup`です。名前変更後の再利用検証は未完了です。
+利用する場合は専用ブランチで`--dry-run`から確認し、import・CLI・lock・文書をレビューしてください。
+
+今後の拡張候補は、新しいTool、アプリ側の構造化された最終応答、複数Agent、外部API / DB連携です。
+現在のMCP構造化Tool結果と、将来のAgent最終応答の構造化は別の機能です。
+
+## 秘密情報とバックアップ
+
+`.env`、APIキー、OAuthトークン、SSH秘密鍵はGitへ保存しません。
+bootstrapは新規`.env`を権限600で作成し、既存ファイルは保持します。
+既存権限が600以外なら警告するため、必要に応じて自分で修正してください。
 
 ```bash
 git check-ignore -v .env
 ```
 
-API Key、OAuth Token、SSH Private Key などの秘密情報を、画面・ログ・README・Issue・Pull Request に出力しないでください。
-
----
-
-## Run
-
-`.env` を現在の shell に読み込みます。
+Git履歴をbundleで保管する場合、作業ツリーの外へ保存できます。
 
 ```bash
-set -a
-source .env
-set +a
+git bundle create ../agent-lab-backup.bundle --all
+git bundle verify ../agent-lab-backup.bundle
 ```
 
-OpenAI Agent を実行します。
-
-```bash
-uv run python -m agent_lab.main
-```
-
-現在の最小構成では、OpenAI Agents SDK を利用してモデルを呼び出します。
-
-動作確認済みの例:
-
-```text
-OpenAI Agents SDK は正常に動作しています。
-```
-
----
-
-## Function Tool（Step 3）
-
-APIキーなしで比較できます。.envの読込みも不要です。
-
-```bash
-uv run --frozen agent-lab --compare-json '{"source":["A","B","B"],"baseline":["B","C"]}'
-```
-
-```json
-{"same":["B"],"source_only":["A"],"baseline_only":["C"]}
-```
-
-同じ処理は `python -m agent_lab.main --compare-json ...` でも利用できます。
-両配列は必須、各1,000要素以下、各文字列1〜256文字です。
-重複を除去しソートします。大小文字・空白・Unicode表記は保持します。
-不正入力はerror JSONと終了コード2を返します。ログはstderr、結果はstdoutです。
-
-実モデルからToolを使う場合（APIキー設定・課金あり）:
-
-```bash
-uv run --frozen agent-lab --tool-mode function --prompt 'compare_listsを使いsource=["A","B"]とbaseline=["B","C"]を比較してください。'
-```
-
-モデル指定は `--model` > `AGENT_MODEL` > 明示したTOML > SDK既定値です。.envは自動読込みしません。
-引数なし実行は従来のAPI接続確認を行います。
-console scriptの `agent-lab` も同じ入口へ統一したため、以前の挨拶表示から動作が変わります。
-
-[入力・Tool契約](docs/tool-contract.md) / [実行・障害対応手順](docs/runbook.md)
-
----
-
-## MCP Server（Step 4）
-
-compare_listsを別プロセスのstdio Serverで公開します。APIキーは不要です。
-
-```bash
-uv run --frozen pytest -m integration -v
-```
-
-実SDK ClientがServerを起動し、Tool一覧・比較・エラー・終了を確認します。
-Function Toolと同じ比較関数・入力schemaを使用し、ログはstderrに出力します。
-
-Server単体の起動コマンドは次のとおりです（stdinの入力待ちになります）。
-
-```bash
-uv run --frozen python -m agent_lab.mcp.server
-```
-
-[MCP Server仕様・操作手順](docs/mcp-server.md)を参照してください。
-
-## MCP Client（Step 5）
-
-API不要でTool一覧と比較結果を確認できます。ClientがServerを起動・終了します。
-
-```bash
-uv run --frozen agent-lab-mcp-client list-tools
-uv run --frozen agent-lab-mcp-client call compare_lists \
-  --arguments '{"source":["A","B","B"],"baseline":["B","C"]}'
-```
-
-Agentから同じServerを使う場合は `agent-lab --tool-mode mcp --prompt '...'` を使用します
-（APIキー・課金あり）。Function Toolとの二重登録は行いません。
-設定はCLI > 環境変数 > 明示したTOML > 既定値です。
-[MCP Client仕様・設定・検証手順](docs/mcp-client.md)を参照してください。
-
----
-
-## Validation
-
-基本的な品質確認は、以下でまとめて実行します。
-
-```bash
-./scripts/validate.sh
-```
-
-個別に実行する場合:
-
-```bash
-uv run ruff check .
-```
-
-format 確認:
-
-```bash
-uv run ruff format --check .
-```
-
-テスト:
-
-```bash
-uv run pytest -v
-```
-
-Python ソースの compile 確認:
-
-```bash
-uv run python -m compileall -q src tests
-```
-
-Git の whitespace エラー確認:
-
-```bash
-git diff --check
-```
-
----
-
-CI結果の取得とmain保護設定は[CI運用手順](docs/ci.md)を参照してください。
-
-## Development Workflow
-
-基本的な開発フローです。
-
-```text
-Issue / Task
-   ↓
-README / AGENTS.md / CLAUDE.md 確認
-   ↓
-小さな単位で変更
-   ↓
-Ruff
-   ↓
-pytest
-   ↓
-validation
-   ↓
-git diff 確認
-   ↓
-commit
-```
-
-変更後は、最低限以下を実行します。
-
-```bash
-uv run ruff check .
-uv run ruff format --check .
-uv run pytest -v
-```
-
-または:
-
-```bash
-./scripts/validate.sh
-```
-
----
-
-## Development Rules
-
-このプロジェクトでは、以下を基本ルールとします。
-
-- `README.md` をプロジェクト仕様の基準とする
-- Python の依存管理には `uv` を使用する
-- Node.js の依存管理には `pnpm` を使用する
-- ランタイムバージョンは `mise.toml` で管理する
-- 秘密情報を Git にコミットしない
-- リポジトリ外のファイルを不用意に変更しない
-- 小さくレビュー可能な変更を優先する
-- 動作変更後はテストと lint を実行する
-- 破壊的操作は実行前に影響範囲を確認する
-- OS 設定変更や `sudo` を伴う処理は明示的に承認してから実行する
-- グローバル依存の追加を避ける
-- ローカルのプロジェクト依存を優先する
-- 外部設定ファイルによる構成分離を優先する
-- 失敗時には終了コードとエラー内容を明確にする
-
----
-
-## Codex
-
-OpenAI Codex CLI を開発支援 Agent として利用します。
-
-Codex 向けの共通ルールは:
-
-```text
-AGENTS.md
-```
-
-に定義します。
-
-基本方針:
-
-- 最初に `README.md` を読む
-- `mise.toml` を確認する
-- リポジトリ外を変更しない
-- 秘密情報を扱わない
-- 破壊的操作を勝手に実行しない
-- 小さな変更を優先する
-- 変更後に validation を実行する
-- 変更内容と検証結果を要約する
-
----
-
-## Claude Code
-
-Claude Code を開発支援 Agent として利用します。
-
-Claude Code 向けのルールは:
-
-```text
-CLAUDE.md
-```
-
-に定義します。
-
-基本方針:
-
-- `README.md` を仕様の基準とする
-- `AGENTS.md` の共通ルールにも従う
-- sandbox / permissions を安全側で利用する
-- リポジトリ外を不用意に変更しない
-- 秘密情報を出力しない
-- OS 設定変更や `sudo` 操作は事前確認する
-- 変更後に lint / test / validation を行う
-
----
-
-## OpenAI Agents SDK
-
-Python では OpenAI Agents SDK を使用します。
-
-基本構成:
-
-```text
-User
-  |
-  v
-Agent
-  |
-  +-- Model
-  |
-  +-- Function Tools
-  |
-  +-- MCP Servers
-  |
-  +-- External APIs
-```
-
-現在は最小 Agent の実行と、OpenAI API への実通信まで確認済みです。
-
----
-
-## Tests
-
-テストは `pytest` を使用します。
-
-smoke testに加え、compare_listsの境界条件・Function Tool登録・CLI・ScriptedModelによるTool呼出しをAPI不要で検証します。通常テストではネットワーク接続とtracingを無効化します。
-
-```bash
-uv run pytest -v
-```
-
-### Test Policy
-
-通常のユニットテストでは、可能な限り外部 API を呼び出しません。
-
-Step 3のunit / ScriptedModel、Step 4の実stdio Server、Step 5のAgent経由MCP統合テストを実装済みです。Step 6で両経路の一致・Server異常終了・liveゲートを追加しました。区分は以下です。
-
-| 区分 | 対象 | 通常実行 |
-|---|---|---|
-| Unit | 関数・入力検証 | 実行 |
-| Integration | ローカルMCPの実プロセス・stdio通信 | 実行 |
-| Live | 実LLM API | 明示指定時のみ |
-
-通常の `pytest` とCIではlive 2件をスキップします。実API検証には
-`--run-live` と `OPENAI_API_KEY` / `AGENT_MODEL` の両方が必要です。
-明示指定時の設定不足は終了コード4、API失敗はテスト失敗として扱います。
-[テスト運用手順](docs/testing.md)に、区分別コマンド・受入条件・live実行方法を記載しています。
-
----
-
-## Ruff
-
-lint / format には Ruff を使用します。
-
-lint:
-
-```bash
-uv run ruff check .
-```
-
-自動修正:
-
-```bash
-uv run ruff check . --fix
-```
-
-format:
-
-```bash
-uv run ruff format .
-```
-
-format 確認:
-
-```bash
-uv run ruff format --check .
-```
-
-### Import Sorting
-
-`I001` が出た場合:
-
-```bash
-uv run ruff check . --fix
-```
-
-を実行します。
-
-`ruff format` だけでは import sort が修正されない場合があります。
-
----
-
-## GitHub Template Repository
-
-このリポジトリは、GitHub Template Repository として利用することを想定しています。
-
-GitHub Web UI:
-
-```text
-Repository
-  ↓
-Settings
-  ↓
-General
-  ↓
-Template repository
-```
-
-`Template repository` を有効化します。
-
-新しいプロジェクトを作成する場合:
-
-```text
-Use this template
-  ↓
-Create a new repository
-```
-
----
-
-## Create a New Project
-
-GitHub CLI からテンプレートを利用する場合:
-
-```bash
-gh repo create my-agent \
-  --private \
-  --template <OWNER>/agent-lab \
-  --clone
-```
-
-作成後:
-
-```bash
-cd my-agent
-./scripts/setup.sh
-./scripts/validate.sh
-```
-
----
-
-## Template Customization
-
-GitHub Template Repository はファイルをコピーしますが、プロジェクト名や Python package 名は自動置換されません。
-
-例えば、新しいリポジトリ名を:
-
-```text
-mcp-file-agent
-```
-
-としても、初期状態の Python package は:
-
-```text
-src/agent_lab/
-```
-
-のままです。
-
-必要に応じて、新しいプロジェクト作成後に package 名を変更します。
-
-将来的には、以下による自動化も検討します。
-
-- `scripts/bootstrap.sh`
-- Copier
-- Cookiecutter
-- 独自 project generator
-
----
-
-## Architecture
-
-基本アーキテクチャ:
-
-```text
-Developer
-   |
-   +-- Codex
-   |    └── AGENTS.md
-   |
-   +-- Claude Code
-   |    └── CLAUDE.md
-   |
-   v
-Repository
-   |
-   +-- Python
-   |    └── uv
-   |
-   +-- Node.js
-   |    └── pnpm
-   |
-   +-- OpenAI Agents SDK
-   |
-   +-- MCP
-   |
-   +-- Tests
-   |
-   └-- Validation
-```
-
-詳細は:
-
-```text
-docs/architecture.md
-```
-
-を参照します。
-
----
-
-## Security
-
-以下の情報は Git に保存しません。
-
-- `.env`
-- OpenAI API Key
-- Anthropic API Key
-- GitHub Token
-- OAuth Token
-- SSH Private Key
-- Codex の認証情報
-- Claude Code の認証情報
-- その他 credential / secret
-
-`.env.example` には、設定項目名だけを記載します。
-
-```env
-OPENAI_API_KEY=
-ANTHROPIC_API_KEY=
-```
-
-### Privileged Operations
-
-以下の操作は特に注意します。
-
-- `sudo`
-- OS 設定変更
-- AppArmor 設定変更
-- Docker daemon 設定変更
-- user / group 変更
-- firewall 変更
-- SSH 設定変更
-- package manager による system-wide install
-- recursive delete
-
-必要性と影響範囲を確認してから実行します。
-
----
-
-## Tracing（Step 8）
-
-既定は無効です。Agent実行時に `--tracing` を指定すると、OpenAIへ
-ID・処理の種類・開始終了時刻・一般化したエラーのみ送信します。
-プロンプト・モデル応答・Tool入出力・例外本文は送信しません。
-ログの `trace_id=trace_<run_id>` で対応付けできます。
-[Tracing運用手順](docs/tracing.md)に設定と確認方法を記載しています。
-
-## Logging
-
-Agent・Tool・MCPのログ設定を共通化しています。stderrに時刻・レベル・実行ID・イベント・処理時間・エラー分類を出力します。
-詳細と確認手順は[Logging運用手順](docs/logging.md)を参照してください。
-
-```text
-INFO
-WARN
-ERROR
-```
-
-秘密情報はログへ出力しません。
-
-ログファイルを使用する場合は、原則として:
-
-```text
-logs/
-```
-
-配下へ保存し、Git 管理対象外にします。
-
----
-
-## Backup
-
-GitHub Repository を正本として利用します。
-
-必要に応じて `git bundle` でもバックアップします。
-
-作成:
-
-```bash
-git bundle create agent-lab.bundle --all
-```
-
-確認:
-
-```bash
-git bundle verify agent-lab.bundle
-```
-
-復元:
-
-```bash
-git clone agent-lab.bundle agent-lab-restored
-```
-
-`.env` など Git 管理外の秘密情報は `git bundle` には含まれません。
-
-秘密情報は別の安全な手段で管理してください。
-
----
-
-## Troubleshooting
-
-### Current mise versions
-
-```bash
-mise current
-```
-
-### mise environment check
-
-```bash
-mise doctor
-```
-
-### Python
-
-```bash
-uv run python --version
-```
-
-### Node.js
-
-```bash
-node --version
-```
-
-### pnpm
-
-```bash
-pnpm --version
-```
-
-### uv
-
-```bash
-uv --version
-```
-
-### OpenAI Agents SDK import
-
-```bash
-uv run python -c "import agents; print('agents import OK')"
-```
-
-### Ruff lint
-
-```bash
-uv run ruff check .
-```
-
-### Ruff auto-fix
-
-```bash
-uv run ruff check . --fix
-```
-
-### Ruff format
-
-```bash
-uv run ruff format .
-```
-
-### Tests
-
-```bash
-uv run pytest -v
-```
-
----
-
-## Validation Checklist
-
-Template Repository の変更前後には、以下を確認します。
-
-- [ ] `mise install` が成功する
-- [ ] `mise current` が `mise.toml` と一致する
-- [ ] `uv sync --frozen` が成功する
-- [ ] `.env` が Git 管理対象外
-- [ ] `.env.example` に秘密情報がない
-- [ ] `uv run ruff check .` が成功する
-- [ ] `uv run ruff format --check .` が成功する
-- [ ] `uv run pytest -v` が成功する
-- [ ] `git diff --check` が成功する
-- [ ] OpenAI Agent の実行が成功する
-- [ ] README の Setup 手順だけで再構築できる
-
----
-
-## Current Status
-
-現在、以下まで動作確認済みです。
-
-- Ubuntu 24.04
-- mise によるランタイム管理
-- Node.js
-- pnpm
-- Python
-- uv
-- OpenAI Agents SDK
-- Ruff
-- pytest
-- OpenAI API 実通信
-- OpenAI Codex CLI
-- Codex sandbox
-- Claude Code
-- Claude Code permissions / sandbox
-- GitHub CLI
-- GitHub SSH 認証
-- Docker
-
-現在は、AI Agent 開発用 Template Repository の基盤構築段階です。
-
----
-
-## Next Steps
-
-[Next Steps 3–6 詳細設計](docs/next-steps-3-6.md) に、入出力・構成・実装順序・受入条件をまとめています。
-Step 3〜6を実装済みです。通常テストはAPI不要、実API検証は明示実行です。
-
-| Step | 項目 | 状態 / 方針 |
-|---|---|---|
-| 1 | scripts/setup.sh | ファイルあり |
-| 2 | scripts/validate.sh | ファイルあり |
-| 3 | Function Tool | 実装済み：compare_lists、入力検証、Agent登録、API不要テスト |
-| 4 | MCP Server | 実装済み：Python / stdio / 比較ロジック共有・実プロセステスト |
-| 5 | MCP Client | 実装済み：診断CLI・Agent接続・設定・timeout・終了処理 |
-| 6 | Integration Tests | 実装済み：経路一致・異常系・live明示ゲート・CI区分 |
-| 7 | GitHub Actions | JUnit結果を14日保存・失敗時手順を整備。main保護は別設定 |
-| 8 | Tracing | 実装済み：明示有効化・メタデータのみ送信・run_id連携 |
-| 9 | Application Logging | 実装済み：共通stderrログ・実行ID・処理時間・エラー分類 |
-| 10 | 環境構築 / bootstrap | 実装済み：`--setup`・前提確認・固定依存・既存.env保持・API不要検証・CI。名前変更は既存の別機能 |
-
-「ファイルあり」は存在確認を示し、本変更で実行検証済みという意味ではありません。
-
----
+bundleには未コミットの変更やGit管理外の`.env`は含まれません。
+秘密情報は別途管理してください。OS設定・sudo・削除等の操作は影響範囲を確認して実施します。
+
+## 困ったとき
+
+| 症状 | 確認・対応 |
+|---|---|
+| miseがない / 信頼エラー | PATH・導入状況・mise.tomlの内容と信頼設定を確認 |
+| CLIや依存が古い | ブランチを確認し`mise exec -- uv sync --frozen` |
+| APIキー未設定 | 実LLMなら自分の.envを読み込む。ローカル比較なら--compare-json |
+| 通常テストで2 skipped | live未指定時の正常動作 |
+| --compare-jsonが拒否される | --tool-mode functionと--no-tracing、設定値の型を確認 |
+| MCP呼出し失敗 | run_id・error_kind、接続/呼出しtimeout、Server終了ログを確認 |
+| Traceがない | 対象プロジェクト・Trace ID・有効化設定・export警告を確認 |
+| CIでXMLがない | テスト以前のセットアップ・lint等の最初の失敗を確認 |
+
+環境診断には`mise doctor`と`mise current`を使用します。
+詳細な実行方法と終了コードは[運用手順](docs/runbook.md)、Server契約は[MCP Server手順](docs/mcp-server.md)にあります。
+`docs/next-steps-3-6.md`等のStep別文書には実装当時の計画・検証履歴も含まれます。
+現状の入口と完了状況はこのREADME、設定・動作の正確な定義は実装とテストを参照してください。
 
 ## License
 
-本プロジェクトは [MIT License](LICENSE) の下で公開しています。
+本プロジェクトは[MIT License](LICENSE)の下で公開しています。
 
 Copyright (c) 2026 Masaaki Koura
 
 依存ライブラリには、それぞれのライセンスが適用されます。
-
