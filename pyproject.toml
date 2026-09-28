@@ -16,6 +16,7 @@ dependencies = [
 ]
 
 [project.scripts]
+agent-lab-compare-models = "agent_lab.model_comparison:cli"
 agent-lab = "agent_lab.main:cli"
 agent-lab-mcp = "agent_lab.mcp.server:cli"
 agent-lab-mcp-client = "agent_lab.mcp.client:cli"
