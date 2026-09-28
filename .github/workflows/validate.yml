@@ -59,18 +59,9 @@ jobs:
           echo "pnpm:"
           pnpm --version
 
-      - name: Synchronize Python dependencies
-        run: |
-          set -Eeuo pipefail
-
-          uv sync --frozen
-
-      - name: Run validation
+      - name: Run bootstrap and validation
         id: validation
-        run: |
-          set -Eeuo pipefail
-
-          ./scripts/validate.sh
+        run: ./scripts/bootstrap.sh --setup
 
       - name: Save test results
         if: ${{ always() && hashFiles('reports/pytest.xml') != '' }}

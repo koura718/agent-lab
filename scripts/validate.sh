@@ -114,7 +114,7 @@ fi
 
 log_info "Running Ruff lint..."
 
-mise exec -- uv run ruff check .
+mise exec -- uv run --frozen ruff check .
 
 # -----------------------------------------------------------------------------
 # 6. Ruff formatting
@@ -122,7 +122,7 @@ mise exec -- uv run ruff check .
 
 log_info "Checking Ruff formatting..."
 
-mise exec -- uv run ruff format --check .
+mise exec -- uv run --frozen ruff format --check .
 
 # -----------------------------------------------------------------------------
 # 7. Python tests
@@ -149,7 +149,7 @@ if [[ -d "${PROJECT_ROOT}/tests" ]]; then
 fi
 
 if [[ "${#compile_targets[@]}" -gt 0 ]]; then
-    mise exec -- uv run python -m compileall -q "${compile_targets[@]}"
+    mise exec -- uv run --frozen python -m compileall -q "${compile_targets[@]}"
 else
     log_warn "No src/ or tests/ directories found; compile check skipped."
 fi
