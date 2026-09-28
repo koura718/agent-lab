@@ -21,9 +21,13 @@ def pytest_addoption(parser):
 
 def pytest_configure(config):
     if config.getoption("--run-live"):
+        provider = os.getenv("AGENT_PROVIDER", "openai")
+        if provider not in ("openai", "anthropic"):
+            raise pytest.UsageError("AGENT_PROVIDER must be openai or anthropic")
+        key_name = "ANTHROPIC_API_KEY" if provider == "anthropic" else "OPENAI_API_KEY"
         missing = [
             name
-            for name in ("OPENAI_API_KEY", "AGENT_MODEL")
+            for name in (key_name, "AGENT_MODEL")
             if not os.getenv(name, "").strip()
         ]
         if missing:
@@ -58,6 +62,7 @@ def offline_only(monkeypatch, request):
     ):
         return
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     for name in ENVIRONMENT.values():
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("OPENAI_AGENTS_DISABLE_TRACING", "1")

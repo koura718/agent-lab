@@ -1,6 +1,7 @@
 # AI Agent Lab
 
 OpenAI Agents SDKとMCPを使い、Toolの実装・接続・テスト・運用を学び、拡張するためのPythonプロジェクトです。
+OpenAIとAnthropic（Claude評価用互換API）のモデルを切り替えられます。
 文字列配列を比較する`compare_lists`を、Function Toolと別プロセスのMCP Serverから利用できます。
 Ubuntu 24.04を基準に、API不要の検証、実LLMの明示的な検証、CI、ログ、Tracing、環境構築を実装しています。
 
@@ -136,8 +137,7 @@ HTTP公開、任意の外部Serverコマンド、リモートURL接続の設定�
 ### 実LLMからToolを使う（任意・API課金あり）
 
 bootstrapで作成した`.env`に、自分の`OPENAI_API_KEY`を設定してください。
-`.env.example`にはキーの値を保存しません。`ANTHROPIC_API_KEY`欄は開発支援用の雛形で、
-このアプリのモデル呼出しには使用しません。
+`.env.example`にはキーの値を保存しません。`ANTHROPIC_API_KEY`欄はClaudeモデルで検証する場合に使用します。
 
 自分で管理する`.env`をサブシェルで読み込み、モデルを指定して実行します。
 `gpt-5-mini`はこのプロジェクトでの検証済み例です。利用可能なモデルに合わせて変更できます。
@@ -147,6 +147,7 @@ bootstrapで作成した`.env`に、自分の`OPENAI_API_KEY`を設定してく�
   set -a
   source .env
   set +a
+  export AGENT_PROVIDER=openai
   export AGENT_MODEL=gpt-5-mini
   mise exec -- uv run --frozen agent-lab --tool-mode function --no-tracing \
     --prompt 'compare_listsを使いsource=["A","B","B"]とbaseline=["B","C"]を比較してください。'
@@ -159,6 +160,12 @@ MCPモードではFunction Toolを二重登録しません。MCP Tool呼出し�
 `agent-lab`と`python -m agent_lab.main`は同じCLIです。
 **引数なし実行も実LLM APIを呼びます。** API不要の確認には`--compare-json`または診断CLIを使用してください。
 
+### Claudeで同じToolを検証する
+
+`--provider anthropic --model claude-sonnet-4-6 --no-tracing`でAnthropicの評価用互換APIを使えます。
+`ANTHROPIC_API_KEY`が必要で、OpenAIキーは不要です。Function / MCPの両経路に対応します。
+準備・liveテスト・互換範囲は[Claude検証手順](docs/claude.md)を参照してください。
+
 ## 設定
 
 優先順位は **CLI > 環境変数 > 明示したTOML > 既定値** です。
@@ -167,6 +174,7 @@ MCPモードではFunction Toolを二重登録しません。MCP Tool呼出し�
 
 | CLI | 環境変数 | TOML | 既定値 |
 |---|---|---|---|
+| --provider | AGENT_PROVIDER | agent.provider | openai |
 | --tool-mode | AGENT_TOOL_MODE | agent.tool_mode | function |
 | --model | AGENT_MODEL | agent.model | SDK既定 |
 | --max-turns | AGENT_MAX_TURNS | agent.max_turns | 5 |
@@ -196,6 +204,7 @@ timeoutは有限の正数で最大3,600秒、最大ターン数は1〜100、ロ�
 | src/agent_lab/agent_factory.py | Function / MCPのAgent生成 |
 | src/agent_lab/main.py | ローカル比較・実LLM AgentのCLI |
 | src/agent_lab/mcp/ | stdio Server・診断Client・接続ライフサイクル |
+| src/agent_lab/model_provider.py | provider選択・Anthropic互換APIクライアントの生成と終了 |
 | src/agent_lab/config.py | CLI・環境変数・TOMLの設定と検証 |
 | src/agent_lab/logging_config.py | 共通ログ・実行ID・処理時間・エラー分類 |
 | src/agent_lab/tracing_config.py | 明示的なTracing・送信項目の制限 |
@@ -242,12 +251,14 @@ Tracingテストではメモリ内sinkやHTTPモックで送信内容を検証�
   set -a
   source .env
   set +a
+  export AGENT_PROVIDER=openai
   export AGENT_MODEL=gpt-5-mini
   mise exec -- uv run --frozen pytest -m live --run-live -v --maxfail=1
 )
 ```
 
-`--run-live`、`OPENAI_API_KEY`、`AGENT_MODEL`が必要です。
+`--run-live`、選択providerのAPIキー、`AGENT_MODEL`が必要です。
+既定はOpenAIです。`AGENT_PROVIDER=anthropic`なら`ANTHROPIC_API_KEY`を使います。
 明示実行時のキー・モデル不足は設定エラー、API失敗はテスト失敗になります。
 liveテストもTracingは無効です。詳細は[テスト手順](docs/testing.md)を参照してください。
 
