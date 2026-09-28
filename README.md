@@ -1,7 +1,7 @@
 # AI Agent Lab
 
 OpenAI Agents SDKとMCPを使い、Toolの実装・接続・テスト・運用を学び、拡張するためのPythonプロジェクトです。
-OpenAIとAnthropic（Claude評価用互換API）のモデルを切り替えられます。
+OpenAIとAnthropic（Claude評価用互換API）のモデルを切り替え、同じプロセス内で並列に比較できます。
 文字列配列を比較する`compare_lists`を、Function Toolと別プロセスのMCP Serverから利用できます。
 Ubuntu 24.04を基準に、API不要の検証、実LLMの明示的な検証、CI、ログ、Tracing、環境構築を実装しています。
 
@@ -67,9 +67,9 @@ mise exec -- uv run --frozen agent-lab --tool-mode function --no-tracing \
 | 9 | Application Logging | 共通stderrログ、実行ID、処理時間、エラー分類 |
 | 10 | Bootstrap | --setup入口、前提確認、再実行、既存.env保持、CI経由の検証 |
 
-2026-09-28時点のUbuntu検証結果は **157 passed, 2 skipped** です。
+Claude対応追加時（2026-09-28）のUbuntu検証結果は **174 passed, 2 skipped** です。
 2件のskipは明示実行しなかったliveテストです。別途、`gpt-5-mini`でFunction / MCPのlive 2件成功と、
-MCP経路のTraceのDashboard表示を確認しています。実LLMの結果はモデル・接続環境に依存します。
+MCP経路のTraceのDashboard表示を確認しています。`claude-sonnet-4-6`もFunction / MCPのlive 2件成功を確認済みです。実LLMの結果はモデル・接続環境に依存します。
 
 ## 環境と前提
 
@@ -166,7 +166,26 @@ MCPモードではFunction Toolを二重登録しません。MCP Tool呼出し�
 `ANTHROPIC_API_KEY`が必要で、OpenAIキーは不要です。Function / MCPの両経路に対応します。
 準備・liveテスト・互換範囲は[Claude検証手順](docs/claude.md)を参照してください。
 
+### GPTとClaudeを並列に比較する
+
+`agent-lab-compare-models`で同じ入力を両モデルへ同時に渡せます。
+両APIキーを読み込んだシェルで実行してください（両providerにAPI課金あり）。
+
+```bash
+mise exec -- uv run --frozen agent-lab-compare-models \
+  --openai-model gpt-5-mini --anthropic-model claude-sonnet-4-6 \
+  --tool-mode function \
+  --arguments '{"source":["A","B","B"],"baseline":["B","C"]}'
+```
+
+`--tool-mode mcp`なら各Agentが専用Serverを使います。実行ID・所要時間・最終応答・Tool結果を
+JSONで返し、片側のAPI失敗でも他方の結果を保持します。Tracingは両方無効です。
+この専用CLIは`AGENT_PROVIDER`や`AGENT_MODEL`ではなく個別引数で設定します。
+[並列比較の設定・レポート・終了コード](docs/mixed-models.md)を参照してください。
+
 ## 設定
+
+以下は単一providerのAgent / MCP診断CLIの設定です。
 
 優先順位は **CLI > 環境変数 > 明示したTOML > 既定値** です。
 `.env`と`config/agent.toml`は自動読込みしません。
@@ -204,6 +223,7 @@ timeoutは有限の正数で最大3,600秒、最大ターン数は1〜100、ロ�
 | src/agent_lab/agent_factory.py | Function / MCPのAgent生成 |
 | src/agent_lab/main.py | ローカル比較・実LLM AgentのCLI |
 | src/agent_lab/mcp/ | stdio Server・診断Client・接続ライフサイクル |
+| src/agent_lab/model_comparison.py | GPT / Claudeの並列実行・Tool契約検証・結果レポート |
 | src/agent_lab/model_provider.py | provider選択・Anthropic互換APIクライアントの生成と終了 |
 | src/agent_lab/config.py | CLI・環境変数・TOMLの設定と検証 |
 | src/agent_lab/logging_config.py | 共通ログ・実行ID・処理時間・エラー分類 |
@@ -322,7 +342,7 @@ mise trust mise.toml
 Step 10で検証したのは環境構築の`--setup`です。名前変更後の再利用検証は未完了です。
 利用する場合は専用ブランチで`--dry-run`から確認し、import・CLI・lock・文書をレビューしてください。
 
-今後の拡張候補は、新しいTool、アプリ側の構造化された最終応答、複数Agent、外部API / DB連携です。
+今後の拡張候補は、新しいTool、アプリ側の構造化された最終応答、Agent間の役割分担・連携、外部API / DB連携です。
 現在のMCP構造化Tool結果と、将来のAgent最終応答の構造化は別の機能です。
 
 ## 秘密情報とバックアップ
