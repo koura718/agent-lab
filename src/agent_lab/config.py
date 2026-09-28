@@ -25,8 +25,8 @@ class Settings:
     log_level: str = "INFO"
 
     def __post_init__(self):
-        if self.provider not in ("openai", "anthropic"):
-            raise ConfigurationError("provider must be openai or anthropic.")
+        if self.provider not in ("openai", "anthropic", "cerebras"):
+            raise ConfigurationError("provider must be openai, anthropic or cerebras.")
         if type(self.tracing_enabled) is not bool:
             raise ConfigurationError("tracing_enabled must be a boolean.")
         if self.tool_mode not in ("function", "mcp"):
@@ -85,7 +85,7 @@ def add_settings_arguments(parser: argparse.ArgumentParser) -> None:
         default=None,
         help="Opt in to metadata tracing export to OpenAI.",
     )
-    parser.add_argument("--provider", choices=["openai", "anthropic"])
+    parser.add_argument("--provider", choices=["openai", "anthropic", "cerebras"])
     parser.add_argument("--tool-mode", choices=["function", "mcp"])
     parser.add_argument("--model")
     parser.add_argument("--max-turns", type=int)

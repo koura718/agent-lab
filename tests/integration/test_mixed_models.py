@@ -13,10 +13,15 @@ from agent_lab.model_comparison import compare_models
 pytestmark = pytest.mark.integration
 
 
+@pytest.mark.parametrize("include_cerebras", [False, True])
 @pytest.mark.parametrize("mode", ["function", "mcp"])
-def test_parallel_runner_paths(monkeypatch, mode, child_processes):
+def test_parallel_runner_paths(monkeypatch, mode, child_processes, include_cerebras):
     monkeypatch.setenv("OPENAI_API_KEY", "dummy-openai")
     monkeypatch.setenv("ANTHROPIC_API_KEY", "dummy-anthropic")
+    monkeypatch.setenv("CEREBRAS_API_KEY", "dummy-cerebras")
+    models = {"openai": "gpt-test", "anthropic": "claude-test"}
+    if include_cerebras:
+        models["cerebras"] = "qwen-3.8-27b"
     arguments = {"source": ["A", "B", "B"], "baseline": ["B", "C"]}
     seen = {}
 
@@ -36,14 +41,14 @@ def test_parallel_runner_paths(monkeypatch, mode, child_processes):
     report = asyncio.run(
         compare_models(
             arguments,
-            {"openai": "gpt-test", "anthropic": "claude-test"},
+            models,
             Settings(tool_mode=mode),
         )
     )
     assert report["status"] == "success"
     assert report["results_match"] is True
-    assert set(seen) == {"openai", "anthropic"}
+    assert set(seen) == set(models)
     assert report["runs"][0]["final_output"] == "openai finished"
     assert report["runs"][1]["final_output"] == "anthropic finished"
-    assert len(child_processes) == (2 if mode == "mcp" else 0)
+    assert len(child_processes) == (len(models) if mode == "mcp" else 0)
     assert all(process.returncode == 0 for process, _ in child_processes)

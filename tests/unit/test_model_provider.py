@@ -97,3 +97,42 @@ def test_openai_model_passthrough():
             assert model == "test-model"
 
     asyncio.run(check())
+
+
+@pytest.mark.parametrize("problem", ["key", "model", "tracing"])
+def test_cerebras_access_validation(monkeypatch, problem):
+    monkeypatch.setenv("OPENAI_API_KEY", "unrelated-openai-secret")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "unrelated-anthropic-secret")
+    if problem != "key":
+        monkeypatch.setenv("CEREBRAS_API_KEY", "dummy")
+    with pytest.raises(
+        ConfigurationError,
+        match={"key": "CEREBRAS_API_KEY", "model": "explicit", "tracing": "no-tracing"}[
+            problem
+        ],
+    ):
+        validate_model_access(
+            Settings(provider="cerebras", tracing_enabled=problem == "tracing"),
+            None if problem == "model" else "qwen-3.8-27b",
+        )
+
+
+def test_cerebras_cli_and_config(monkeypatch, tmp_path):
+    from agent_lab import main as app
+
+    config = tmp_path / "cerebras.toml"
+    config.write_text('[agent]\nprovider="cerebras"\nmodel="qwen-3.8-27b"\n')
+    monkeypatch.setenv("CEREBRAS_API_KEY", "dummy")
+    observed = []
+
+    async def fake_main(prompt, model, settings):
+        observed.append((settings.provider, model))
+
+    monkeypatch.setattr(app, "main", fake_main)
+    assert cli(["--config", str(config)]) == 0
+    assert observed == [("cerebras", "qwen-3.8-27b")]
+    monkeypatch.setenv("AGENT_PROVIDER", "cerebras")
+    monkeypatch.setenv("AGENT_MODEL", "qwen-3.8-27b")
+    assert cli([]) == 0
+    assert cli(["--provider", "cerebras", "--model", "gpt-oss-120b"]) == 0
+    assert observed[-1] == ("cerebras", "gpt-oss-120b")

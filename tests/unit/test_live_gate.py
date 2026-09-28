@@ -7,7 +7,11 @@ import pytest
 
 @pytest.mark.parametrize(
     "provider,key_name",
-    [("openai", "OPENAI_API_KEY"), ("anthropic", "ANTHROPIC_API_KEY")],
+    [
+        ("openai", "OPENAI_API_KEY"),
+        ("anthropic", "ANTHROPIC_API_KEY"),
+        ("cerebras", "CEREBRAS_API_KEY"),
+    ],
 )
 @pytest.mark.parametrize(
     "enabled,key,model,expected",

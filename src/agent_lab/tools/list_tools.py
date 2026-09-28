@@ -64,7 +64,7 @@ async def _invoke_compare_lists(context: ToolContext[Any], arguments: str) -> st
     return compare_json(arguments)
 
 
-def create_compare_lists_tool() -> FunctionTool:
+def create_compare_lists_tool(*, strict_json_schema: bool = True) -> FunctionTool:
     """Create a fresh tool/schema for each Agent; no model is initialized."""
     return FunctionTool(
         name="compare_lists",
@@ -76,5 +76,5 @@ def create_compare_lists_tool() -> FunctionTool:
         ),
         params_json_schema=input_schema(),
         on_invoke_tool=_invoke_compare_lists,
-        strict_json_schema=True,
+        strict_json_schema=strict_json_schema,
     )

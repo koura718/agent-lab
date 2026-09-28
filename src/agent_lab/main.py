@@ -29,7 +29,7 @@ logger = logging.getLogger("agent_lab.main")
 
 @timed("agent")
 async def run_agent(prompt: str, model: str | Model | None, settings: Settings):
-    if settings.provider == "anthropic":
+    if settings.provider != "openai":
         validate_model_access(settings, model)
     run_config = agent_run_config(settings)
     async with asyncio.timeout(settings.run_timeout_seconds):
@@ -37,13 +37,17 @@ async def run_agent(prompt: str, model: str | Model | None, settings: Settings):
             if settings.tool_mode == "mcp":
                 async with agent_connection(settings) as server:
                     return await Runner.run(
-                        create_agent(model=selected_model, mcp_server=server),
+                        create_agent(
+                            model=selected_model,
+                            mcp_server=server,
+                            provider=settings.provider,
+                        ),
                         prompt,
                         max_turns=settings.max_turns,
                         run_config=run_config,
                     )
             return await Runner.run(
-                create_agent(model=selected_model),
+                create_agent(model=selected_model, provider=settings.provider),
                 prompt,
                 max_turns=settings.max_turns,
                 run_config=run_config,
@@ -56,7 +60,7 @@ async def main(
     settings: Settings | None = None,
 ) -> None:
     settings = settings or Settings()
-    if settings.provider == "anthropic":
+    if settings.provider != "openai":
         validate_model_access(settings, model)
     with tracing_runtime(settings.tracing_enabled):
         result = await run_agent(prompt, model, settings)

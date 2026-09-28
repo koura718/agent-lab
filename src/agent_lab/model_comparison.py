@@ -1,4 +1,4 @@
-"""Run OpenAI and Anthropic concurrently against the same compare_lists task."""
+"""Run selected OpenAI, Anthropic and Cerebras agents concurrently against the same compare_lists task."""
 
 import argparse
 import asyncio
@@ -56,16 +56,22 @@ def checked_tool_result(result, arguments):
 
 
 async def compare_models(arguments: dict, models: dict[str, str], settings: Settings):
-    """Isolate task state and failures; return a report after both runs finish.
+    """Isolate task state and failures; return a report after all runs finish.
 
     Each provider owns an Agent (and an MCP server in MCP mode). Cancellation
-    propagates after both tasks finish their cleanup. Tracing is always off.
+    propagates after all tasks finish their cleanup. Tracing is always off.
     """
     expected = compare_arguments(arguments)
-    if set(models) != {"openai", "anthropic"} or any(
-        not isinstance(model, str) or not model.strip() for model in models.values()
+    if (
+        not 2 <= len(models) <= 3
+        or set(models) - {"openai", "anthropic", "cerebras"}
+        or any(
+            not isinstance(model, str) or not model.strip() for model in models.values()
+        )
     ):
-        raise ConfigurationError("Provide an explicit model for each provider.")
+        raise ConfigurationError(
+            "Provide explicit models for two or three supported providers."
+        )
     if settings.tracing_enabled:
         raise ConfigurationError("Parallel model comparison does not support tracing.")
     # Snapshot caller-owned data before concurrent tasks can observe mutations.
@@ -121,7 +127,8 @@ async def compare_models(arguments: dict, models: dict[str, str], settings: Sett
     with run_context() as batch_id:
         tasks = [
             asyncio.create_task(run_one(provider))
-            for provider in ("openai", "anthropic")
+            for provider in ("openai", "anthropic", "cerebras")
+            if provider in models
         ]
         try:
             runs = await asyncio.gather(*tasks)
@@ -137,7 +144,7 @@ async def compare_models(arguments: dict, models: dict[str, str], settings: Sett
             "tool_mode": settings.tool_mode,
             "status": "success" if success else "failed",
             "duration_ms": round((time.perf_counter() - started) * 1000, 3),
-            "results_match": comparisons[0] == comparisons[1]
+            "results_match": all(value == comparisons[0] for value in comparisons[1:])
             if all(value is not None for value in comparisons)
             else None,
             "runs": runs,
@@ -147,13 +154,14 @@ async def compare_models(arguments: dict, models: dict[str, str], settings: Sett
 @cli_context()
 def cli(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Compare GPT and Claude concurrently (paid API calls)."
+        description="Compare two or three model providers concurrently (paid API calls)."
     )
     parser.add_argument(
         "--arguments", required=True, help="JSON with source and baseline arrays."
     )
-    parser.add_argument("--openai-model", required=True)
-    parser.add_argument("--anthropic-model", required=True)
+    parser.add_argument("--openai-model")
+    parser.add_argument("--anthropic-model")
+    parser.add_argument("--cerebras-model")
     parser.add_argument("--tool-mode", choices=["function", "mcp"], default="function")
     parser.add_argument("--max-turns", type=int, default=3)
     parser.add_argument("--run-timeout", type=float, default=60)
@@ -166,7 +174,17 @@ def cli(argv: list[str] | None = None) -> int:
     try:
         arguments = parse_arguments(args.arguments)
         compare_arguments(arguments)
-        models = {"openai": args.openai_model, "anthropic": args.anthropic_model}
+        models = {
+            provider: model
+            for provider, model in (
+                ("openai", args.openai_model),
+                ("anthropic", args.anthropic_model),
+                ("cerebras", args.cerebras_model),
+            )
+            if model is not None
+        }
+        if len(models) < 2:
+            raise ConfigurationError("Specify at least two provider model arguments.")
         if any(not model.strip() for model in models.values()):
             raise ConfigurationError("Model names must not be empty.")
         settings = Settings(
@@ -177,7 +195,7 @@ def cli(argv: list[str] | None = None) -> int:
             call_timeout_seconds=args.call_timeout,
             log_level=args.log_level,
         )
-        # Fail before any paid request when either credential is missing.
+        # Fail before any paid request when any selected credential is missing.
         for provider, model in models.items():
             validate_model_access(replace(settings, provider=provider), model)
     except (ConfigurationError, ComparisonInputError) as error:

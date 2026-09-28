@@ -196,3 +196,96 @@ def test_cli_json_and_exit_status(monkeypatch, keys, capsys, success):
     assert json.loads(capsys.readouterr().out)["status"] == (
         "success" if success else "failed"
     )
+
+
+@pytest.mark.parametrize("failure", [None, "api", "wrong_result"])
+def test_three_providers_overlap_and_check_third_result(monkeypatch, keys, failure):
+    monkeypatch.setenv("CEREBRAS_API_KEY", "dummy")
+    models = {**MODELS, "cerebras": "qwen-3.8-27b"}
+    entered = set()
+    ready = asyncio.Event()
+
+    async def fake_agent(prompt, model, settings):
+        entered.add(settings.provider)
+        if len(entered) == 3:
+            ready.set()
+        await asyncio.wait_for(ready.wait(), 1)
+        value = result()
+        if settings.provider == "cerebras":
+            if failure == "api":
+                raise RuntimeError("private-marker")
+            if failure == "wrong_result":
+                value.new_items[
+                    1
+                ].output = '{"same":[],"source_only":[],"baseline_only":[]}'
+        return value
+
+    monkeypatch.setattr(app, "run_agent", fake_agent)
+    report = asyncio.run(app.compare_models(ARGUMENTS, models, Settings()))
+    assert len({report["batch_run_id"], *(r["run_id"] for r in report["runs"])}) == 4
+    assert [r["provider"] for r in report["runs"]] == list(models)
+    assert [r["status"] for r in report["runs"][:2]] == ["success", "success"]
+    assert report["status"] == ("success" if failure is None else "failed")
+    assert report["results_match"] is (None if failure == "api" else failure is None)
+    assert "private-marker" not in json.dumps(report)
+
+
+def test_cerebras_missing_key_prevents_all_cli_requests(monkeypatch, keys, capsys):
+    async def forbidden(*args):
+        raise AssertionError("No paid calls allowed")
+
+    monkeypatch.setattr(app, "compare_models", forbidden)
+    with pytest.raises(SystemExit) as error:
+        app.cli(
+            [
+                "--openai-model",
+                "gpt-test",
+                "--anthropic-model",
+                "claude-test",
+                "--cerebras-model",
+                "qwen-3.8-27b",
+                "--arguments",
+                json.dumps(ARGUMENTS),
+            ]
+        )
+    assert error.value.code == 2
+    assert "CEREBRAS_API_KEY is required" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    "providers",
+    [
+        ("openai", "cerebras"),
+        ("anthropic", "cerebras"),
+        ("openai", "anthropic", "cerebras"),
+    ],
+)
+def test_cli_selected_providers_only(monkeypatch, capsys, providers):
+    for provider in providers:
+        monkeypatch.setenv(provider.upper() + "_API_KEY", "dummy")
+
+    async def fake_comparison(arguments, models, settings):
+        assert set(models) == set(providers)
+        return {"status": "success"}
+
+    monkeypatch.setattr(app, "compare_models", fake_comparison)
+    args = ["--arguments", json.dumps(ARGUMENTS)]
+    for provider in providers:
+        args.extend(["--" + provider + "-model", "test-model"])
+    assert app.cli(args) == 0
+
+
+@pytest.mark.parametrize(
+    "models",
+    [
+        {},
+        {"cerebras": "qwen"},
+        {"openai": "gpt", "unknown": "test"},
+        {"openai": "gpt", "cerebras": " "},
+    ],
+)
+def test_invalid_provider_selection(models):
+    from agent_lab.config import ConfigurationError
+
+    with pytest.raises(ConfigurationError):
+        asyncio.run(app.compare_models(ARGUMENTS, models, Settings()))
