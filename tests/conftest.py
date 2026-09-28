@@ -9,6 +9,7 @@ from agents.tracing import set_trace_provider
 from agents.tracing.provider import DefaultTraceProvider
 
 from agent_lab.config import ENVIRONMENT
+from agent_lab.model_provider import PROVIDER_KEYS
 
 pytest_plugins = ["pytester"]
 
@@ -22,9 +23,11 @@ def pytest_addoption(parser):
 def pytest_configure(config):
     if config.getoption("--run-live"):
         provider = os.getenv("AGENT_PROVIDER", "openai")
-        if provider not in ("openai", "anthropic"):
-            raise pytest.UsageError("AGENT_PROVIDER must be openai or anthropic")
-        key_name = "ANTHROPIC_API_KEY" if provider == "anthropic" else "OPENAI_API_KEY"
+        if provider not in PROVIDER_KEYS:
+            raise pytest.UsageError(
+                "AGENT_PROVIDER must be openai, anthropic or cerebras"
+            )
+        key_name = PROVIDER_KEYS[provider]
         missing = [
             name
             for name in (key_name, "AGENT_MODEL")
@@ -63,6 +66,7 @@ def offline_only(monkeypatch, request):
         return
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("CEREBRAS_API_KEY", raising=False)
     for name in ENVIRONMENT.values():
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("OPENAI_AGENTS_DISABLE_TRACING", "1")

@@ -177,7 +177,7 @@ if [[ -f "${ENV_EXAMPLE}" ]]; then
     log_info "Checking .env.example for obvious secret values..."
 
     if grep -Eq \
-        '^[[:space:]]*(OPENAI_API_KEY|ANTHROPIC_API_KEY)[[:space:]]*=[[:space:]]*[^[:space:]#]+' \
+        '^[[:space:]]*(OPENAI_API_KEY|ANTHROPIC_API_KEY|CEREBRAS_API_KEY)[[:space:]]*=[[:space:]]*[^[:space:]#]+' \
         "${ENV_EXAMPLE}"; then
         log_error ".env.example appears to contain a non-empty API key value."
         log_error "Keep secret values out of template files."
