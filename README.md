@@ -903,5 +903,9 @@ Step 3〜6を実装済みです。通常テストはAPI不要、実API検証は�
 
 ## License
 
-必要に応じて、このセクションと `LICENSE` ファイルを追加してください。
+本プロジェクトは [MIT License](LICENSE) の下で公開しています。
+
+Copyright (c) 2026 Masaaki Koura
+
+依存ライブラリには、それぞれのライセンスが適用されます。
 
